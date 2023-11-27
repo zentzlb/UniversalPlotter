@@ -1,12 +1,14 @@
-import pandas as pd
-import numpy as np
+import dask as d
+import dask.dataframe as dd
+import dask.array as da
+
 from functools import lru_cache
 
 
 # import pyarrow
 
 
-def open_csv(path: str, dtype=np.float64) -> tuple[pd.DataFrame, np.ndarray]:
+def open_csv(path: str, dtype=da.float64) -> tuple[dd.DataFrame, da.Array]:
     """
     opens csv file
     :param path: path to csv file
@@ -14,7 +16,7 @@ def open_csv(path: str, dtype=np.float64) -> tuple[pd.DataFrame, np.ndarray]:
     :return: dataframe
     """
     print('reading columns')
-    col = pd.read_csv(path, usecols=[0])
+    col = dd.read_csv(path, usecols=[0])
     print('listing headers')
     header_rows = {row[0] for row in enumerate(col.iloc[:, 0]) if type(row[1]) is str and not check_type(row[1])}
     header_rows.add(max(header_rows) + 1)
