@@ -21,16 +21,16 @@ def open_csv(path: str, dtype=da.float64) -> tuple[dd.DataFrame, da.Array]:
     header_rows = {row[0] for row in enumerate(col.iloc[:, 0]) if type(row[1]) is str and not check_type(row[1])}
     header_rows.add(max(header_rows) + 1)
     print('opening main dataframe')
-    df = pd.read_csv(path, skiprows=header_rows, dtype=dtype)
+    df = dd.read_csv(path, skiprows=header_rows, dtype=dtype)
     print('opening headers')
-    headers = pd.read_csv(path, skiprows=lambda x: x not in header_rows, dtype=str)
+    headers = dd.read_csv(path, skiprows=lambda x: x not in header_rows, dtype=str)
     print('dropping unused columns')
-    headers.dropna(how='all', axis=1, inplace=True)
+    headers.dropna(axis=1, how='all')
     headers.info(verbose=False, memory_usage="deep")
-    df.dropna(how='all', axis=1, inplace=True)
+    df.dropna(axis=1, how='all')
     df.info(verbose=False, memory_usage="deep")
 
-    return df, headers.to_numpy()
+    return df, da.from_array(headers.to_numpy(), chunks=headers.shape)
 
 
 def get_data(df: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray]:
