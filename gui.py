@@ -10,6 +10,9 @@ from matplotlib import pyplot
 
 import pandas as pd
 import numpy as np
+import dask
+import dask.dataframe as dd
+import dask.array as da
 
 from csv_tools import *
 
