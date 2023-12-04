@@ -84,6 +84,10 @@ class GUI:
         self.yaxis_dropdown.bind("<<ComboboxSelected>>", self.yaxis_fn)
         self.yaxis_dropdown.grid(row=13, column=1, columnspan=10)
 
+        # self.shift_time_var1 = tkinter.StringVar(value=f'Select Starting Time ({self.cfc if self.cfc != 0 else "no start time selected"})')
+        # self.shift_time_button1 = tkinter.Button(textvariable=self.shift_time_var1, command= lambda: self.)
+
+
     def browse_fn(self):
         """
         browse and select files
@@ -191,6 +195,7 @@ class GUI:
     def yaxis_fn(self, event: tkinter.Event):
         pass
 
+    # def x_axis_start_shift(self)
     def update_filenames(self):
         """
         update filenames dictionary from files set
