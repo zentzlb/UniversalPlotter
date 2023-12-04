@@ -33,7 +33,7 @@ class GUI:
         self.df = pd.DataFrame()
         self.new_df = pd.DataFrame()
         # self.data = pd.DataFrame()
-        self.text = np.array([])
+        self.text = da.array([])
         self.cfc = 0
         self.legend = []
 
