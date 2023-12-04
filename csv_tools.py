@@ -1,6 +1,8 @@
 import dask as d
 import dask.dataframe as dd
 import dask.array as da
+import pandas as pd
+import numpy as np
 
 from functools import lru_cache
 
@@ -8,7 +10,7 @@ from functools import lru_cache
 # import pyarrow
 
 
-def open_csv(path: str, dtype=da.float64) -> tuple[dd.DataFrame, da.Array]:
+def open_csv(path: str, dtype=np.float64) -> tuple[pd.DataFrame, np.ndarray]:
     """
     opens csv file
     :param path: path to csv file
@@ -16,21 +18,21 @@ def open_csv(path: str, dtype=da.float64) -> tuple[dd.DataFrame, da.Array]:
     :return: dataframe
     """
     print('reading columns')
-    col = dd.read_csv(path, usecols=[0])
+    col = pd.read_csv(path, usecols=[0])
     print('listing headers')
     header_rows = {row[0] for row in enumerate(col.iloc[:, 0]) if type(row[1]) is str and not check_type(row[1])}
     header_rows.add(max(header_rows) + 1)
     print('opening main dataframe')
-    df = dd.read_csv(path, skiprows=header_rows, dtype=dtype)
+    df = pd.read_csv(path, skiprows=header_rows, dtype=dtype)
     print('opening headers')
-    headers = dd.read_csv(path, skiprows=lambda x: x not in header_rows, dtype=str)
+    headers = pd.read_csv(path, skiprows=lambda x: x not in header_rows, dtype=str)
     print('dropping unused columns')
-    headers.dropna(axis=1, how='all')
+    headers.dropna(how='all', axis=1, inplace=True)
     headers.info(verbose=False, memory_usage="deep")
-    df.dropna(axis=1, how='all')
+    df.dropna(how='all', axis=1, inplace=True)
     df.info(verbose=False, memory_usage="deep")
 
-    return df, da.from_array(headers.to_numpy(), chunks=headers.shape)
+    return df, headers.to_numpy()
 
 
 def get_data(df: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray]:
