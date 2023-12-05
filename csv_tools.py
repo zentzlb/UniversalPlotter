@@ -21,16 +21,20 @@ def open_csv(path: str, dtype=np.float64) -> tuple[pd.DataFrame, np.ndarray]:
     col = pd.read_csv(path, usecols=[0])
     print('listing headers')
     header_rows = {row[0] for row in enumerate(col.iloc[:, 0]) if type(row[1]) is str and not check_type(row[1])}
-    header_rows.add(max(header_rows) + 1)
+    if len(header_rows) > 0:
+        header_rows.add(max(header_rows) + 1)
     print('opening main dataframe')
-    df = pd.read_csv(path, skiprows=header_rows, dtype=dtype)
-    print('opening headers')
-    headers = pd.read_csv(path, skiprows=lambda x: x not in header_rows, dtype=str)
-    print('dropping unused columns')
-    headers.dropna(how='all', axis=1, inplace=True)
-    headers.info(verbose=False, memory_usage="deep")
+    df = pd.read_csv(path, skiprows=list(header_rows), dtype=dtype)
     df.dropna(how='all', axis=1, inplace=True)
     df.info(verbose=False, memory_usage="deep")
+    print('opening headers')
+    if len(header_rows) > 0:
+        headers = pd.read_csv(path, skiprows=lambda x: x not in header_rows, dtype=str)
+        headers.dropna(how='all', axis=1, inplace=True)
+        headers.info(verbose=False, memory_usage="deep")
+    else:
+        headers = df.columns
+    # print('dropping unused columns')
 
     return df, headers.to_numpy()
 

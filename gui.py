@@ -2,6 +2,7 @@
 import tkinter
 from tkinter import filedialog, simpledialog, commondialog, dialog
 from tkinter import ttk as TKK, messagebox
+from HIC import hic15
 
 import matplotlib.pyplot as plt
 
@@ -53,34 +54,61 @@ class GUI:
         self.yaxis_label = tkinter.Label(master=self.root, textvariable=self.yaxis_var)
         self.yaxis_label.grid(row=13, column=0)
 
-        self.browse_button = tkinter.Button(text="Browse", command=lambda: self.browse_fn(), width=25, height=1)
+        self.browse_button = tkinter.Button(text="Browse",
+                                            command=lambda: self.browse_fn(),
+                                            width=25,
+                                            height=1)
         self.browse_button.grid(row=0, column=0)
 
-        self.plot_button = tkinter.Button(text="Plot Selected", command=lambda: self.plot_fn(), width=25, height=1)
+        self.plot_button = tkinter.Button(text="Plot Selected",
+                                          command=lambda: self.plot_fn(),
+                                          width=25,
+                                          height=1)
         self.plot_button.grid(row=1, column=1)
 
-        self.open_button = tkinter.Button(text="Open Selected", command=lambda: self.open_fn(), width=25, height=1)
+        self.open_button = tkinter.Button(text="Open Selected",
+                                          command=lambda: self.open_fn(),
+                                          width=25,
+                                          height=1)
         self.open_button.grid(row=1, column=0)
 
         self.filter_var = tkinter.StringVar(value=f'Select Filter ({self.cfc if self.cfc != 0 else "no filter"})')
-        self.filter_button = tkinter.Button(textvariable=self.filter_var, command=lambda: self.filter_fn(), width=25, height=1)
+        self.filter_button = tkinter.Button(textvariable=self.filter_var,
+                                            command=lambda: self.filter_fn(),
+                                            width=25,
+                                            height=1)
         self.filter_button.grid(row=2, column=0)
 
-        self.browse_button = tkinter.Button(text="Clear", command=lambda: self.clear_fn(), width=25, height=1)
+        self.browse_button = tkinter.Button(text="Clear",
+                                            command=lambda: self.clear_fn(),
+                                            width=25,
+                                            height=1)
         self.browse_button.grid(row=0, column=1)
 
-        self.file_dropdown = TKK.Combobox(state='readonly', values=list(self.filenames.keys()), width=27, height=10)
+        self.file_dropdown = TKK.Combobox(state='readonly',
+                                          values=list(self.filenames.keys()),
+                                          width=27,
+                                          height=10)
         self.file_dropdown.grid(row=10, column=1, columnspan=10)
 
-        self.header_dropdown = TKK.Combobox(state='readonly', values=[], width=27, height=10)
+        self.header_dropdown = TKK.Combobox(state='readonly',
+                                            values=[],
+                                            width=27,
+                                            height=10)
         self.header_dropdown.bind("<<ComboboxSelected>>", self.header_fn)
         self.header_dropdown.grid(row=11, column=1, columnspan=10)
 
-        self.xaxis_dropdown = TKK.Combobox(state='readonly', values=[], width=27, height=10)
+        self.xaxis_dropdown = TKK.Combobox(state='readonly',
+                                           values=[],
+                                           width=27,
+                                           height=10)
         self.xaxis_dropdown.bind("<<ComboboxSelected>>", self.xaxis_fn)
         self.xaxis_dropdown.grid(row=12, column=1, columnspan=10)
 
-        self.yaxis_dropdown = TKK.Combobox(state='readonly', values=[], width=27, height=10)
+        self.yaxis_dropdown = TKK.Combobox(state='readonly',
+                                           values=[],
+                                           width=27,
+                                           height=10)
         self.yaxis_dropdown.bind("<<ComboboxSelected>>", self.yaxis_fn)
         self.yaxis_dropdown.grid(row=13, column=1, columnspan=10)
 
@@ -115,7 +143,7 @@ class GUI:
             plt.figure(1)
             plt.plot(xdata, ydata)
             plt.xlabel('Time')
-            self.legend.append(f"{ykey} {self.cfc if self.cfc > 0 else ''}")
+            self.legend.append(f"{ykey} {'CFC ' if self.cfc > 0 else ''}{self.cfc if self.cfc > 0 else ''}")
             plt.legend(self.legend)
             plt.show()
         except KeyError:
@@ -157,7 +185,13 @@ class GUI:
         self.yaxis_dropdown.set('')
         try:
             self.df, self.text = open_csv(self.filenames[key])
-            self.text_rows = {' '.join([str(i) for i in row]): [str(i) for i in row] for row in self.text}
+            if self.text.ndim > 1:
+                self.text_rows = {' '.join([str(i) for i in row]): [str(i) for i in row] for row in self.text}
+            else:
+                text = ' '.join(self.text)
+                self.text_rows = {text: list(self.text)}
+                self.header_dropdown.set(text)
+                self.header_fn(None)
             self.update_headers()
             # print('file opened')
             print(self.text)
@@ -170,11 +204,17 @@ class GUI:
         CFC filter
         :return:
         """
-        self.cfc = simpledialog.askinteger('CFC filtering', 'enter CFC filter type (0 is unfiltered)', minvalue=0, maxvalue=1000)
-        self.filter_var.set(f'Select Filter ({"CFC " if self.cfc != 0 else ""}{self.cfc if self.cfc != 0 else "no filter"})')
+        self.cfc = simpledialog.askinteger('CFC filtering',
+                                           'enter CFC filter type (0 is unfiltered)',
+                                           minvalue=0,
+                                           maxvalue=1000)
+
+        self.filter_var.set(
+            f'Select Filter ({"CFC " if self.cfc != 0 else ""}{self.cfc if self.cfc != 0 else "no filter"})'
+        )
         print(self.cfc)
 
-    def header_fn(self, event: tkinter.Event):
+    def header_fn(self, event: tkinter.Event | None):
         """
         update columns of opened dataframe
         :param event: dropdown menu selection change
@@ -218,8 +258,6 @@ class GUI:
         :return:
         """
         tkinter.mainloop()
-
-
 
 
 if __name__ == '__main__':
