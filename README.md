@@ -8,6 +8,9 @@
 > math \
 > matplotlib
 
+## Useful Terminal Commands
+> git rm --cached "filename"
+
 ## Useful Links
 > ...
 
