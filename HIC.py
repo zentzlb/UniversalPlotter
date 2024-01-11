@@ -3,6 +3,7 @@ import functools
 import numpy as np
 import math
 import time
+import numba
 import random as rnd
 from scipy.stats import norm
 
@@ -46,7 +47,8 @@ def hic15(t: np.ndarray, ax: np.ndarray, ay: np.ndarray, az: np.ndarray):
 
 
 @timed
-def Hic15(mytime: np.ndarray[float], ax: np.ndarray, ay: np.ndarray, az: np.ndarray):
+@numba.njit
+def Hic15(mytime: np.ndarray[float], ax: np.ndarray, ay: np.ndarray, az: np.ndarray) -> tuple[float, float]:
     """
     find maximum HIC15 value
     :param mytime: time in s
@@ -59,20 +61,32 @@ def Hic15(mytime: np.ndarray[float], ax: np.ndarray, ay: np.ndarray, az: np.ndar
     hic = 0
     hic_t = 0
     dt = 0.015
-    dt1p5 = dt ** 1.5
+    n = len(mytime)
     acc = np.sqrt(np.square(ax) + np.square(ay) + np.square(az))
     vel = [0]
     # vel = np.trapz(acc, x=mytime)
     for a1, a2, t1, t2 in zip(acc[:-1], acc[1:], mytime[:-1], mytime[1:]):
         vel.append(vel[-1] + 0.5 * (a2 + a1) * (t2 - t1))
 
-    j = 0
-    for i, t0 in enumerate(mytime):
-        j, t1 = find_next(mytime, t0, j, dt)
-        h = ((vel[j] - vel[i]) ** 2.5) / dt1p5
-        if h > hic:
-            hic = h
-            hic_t = t0
+    index15 = 0
+    for i, t0_v0 in enumerate(zip(mytime, vel)):
+        t0, v0 = t0_v0
+        for j in range(i+1, n):
+            delta_t = mytime[j] - t0
+            if delta_t <= dt:
+                h = ((vel[j] - v0) ** 2.5) / delta_t ** 1.5
+                if h > hic:
+                    hic = h
+                    hic_t = t0
+            else:
+                break
+        # index15, t1 = find_next(mytime, t0, index15, dt)
+        # for j in range(index15, i, -1):
+        #     delta_t = mytime[j] - t0
+        #     h = ((vel[j] - v0) ** 2.5) / delta_t ** 1.5
+        #     if h > hic:
+        #         hic = h
+        #         hic_t = t0
 
     return hic, hic_t
 
