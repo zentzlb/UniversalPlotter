@@ -43,6 +43,18 @@ def catch(fn):
     return wrapper
 
 
+def enumerator(fn):
+    my_list = []
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        string = fn(*args, **kwargs)
+        my_list.append(string)
+        return string + f'({my_list.count(string)})'
+
+    return wrapper
+
+
 def check_file(path: str) -> bool:
     """
     determines whether file is csv or binout

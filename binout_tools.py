@@ -12,6 +12,7 @@ def get_binout(path: str) -> Binout:
     :param path: path to
     :return: text (string)
     """
+    print(path)
     return Binout(path)
 
 

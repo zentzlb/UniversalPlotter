@@ -17,6 +17,7 @@ def open_csv(path: str, dtype=np.float64) -> tuple[pd.DataFrame, np.ndarray]:
     :param dtype:
     :return: dataframe
     """
+    print(path)
     print('reading columns')
     col = pd.read_csv(path, usecols=[0])
     print('listing headers')
