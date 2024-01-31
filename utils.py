@@ -48,8 +48,7 @@ def enumerator(fn):
 
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
-        string = fn(*args, **kwargs)
-        my_list.append(string)
+        my_list.append(string := fn(*args, **kwargs))
         return string + f'({my_list.count(string)})'
 
     return wrapper

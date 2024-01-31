@@ -11,9 +11,9 @@ import itertools
 def timed(fn):
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
-        t1 = time.process_time()
+        t1 = time.time()
         a = fn(*args, **kwargs)
-        t2 = time.process_time()
+        t2 = time.time()
         print(f"function run time: {t2-t1}s")
         return a
     return wrapper
@@ -68,14 +68,12 @@ def hic_ais(hic: float) -> tuple[float, float]:
 
 
 if __name__ == '__main__':
-    t = np.linspace(0, 10, 10001)
-    Ax = np.array([100 * rnd.random() for i in range(10001)])
-    Ay = np.array([100 * rnd.random() for i in range(10001)])
-    Az = np.array([100 * rnd.random() for i in range(10001)])
+    t = np.linspace(0, 10, 100001)
+    Ax = np.array([100 * rnd.random() for i in range(len(t))])
+    Ay = np.array([100 * rnd.random() for i in range(len(t))])
+    Az = np.array([100 * rnd.random() for i in range(len(t))])
 
     Hic, Hic_t = hic15(t, Ax, Ay, Az)
     print(Hic, Hic_t)
 
-    Hic, Hic_t = hic15(t, Ax, Ay, Az)
-    print(Hic, Hic_t)
 

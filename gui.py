@@ -4,7 +4,7 @@ import time
 import tkinter
 import tkinter.simpledialog
 from tkinter import filedialog, simpledialog, commondialog, dialog, colorchooser
-from tkinter import ttk as TKK, messagebox
+from tkinter import ttk as TTK, messagebox
 from utils import catch, check_file, check_ext, trim_series, process_series, enumerator
 from HIC15 import hic15, hic_ais
 from Cmax import chest_AIS3
@@ -26,7 +26,7 @@ import dask.dataframe as dd
 import dask.array as da
 
 from csv_tools import *
-from binout_tools import get_binout
+from binout_tools import get_binout, read_binout
 
 
 class GUI:
@@ -38,11 +38,11 @@ class GUI:
         self.root = tkinter.Tk()
         self.root.title('CSV Plotter')
 
-        self.files = set()
+        self.files = []  # set()
         self.filenames = {}
         self.text_rows = {}
         self.headers = []
-        self.data: pd.DataFrame | Binout = pd.DataFrame()
+        self.data: pd.DataFrame | Binout | None = None
         self.ext = ''
         self.series = {}
         self.text = np.array([])
@@ -105,7 +105,7 @@ class GUI:
                                            height=1)
         self.color_button.grid(row=6, column=0)
 
-        self.style_dropdown = TKK.Combobox(state='readonly',
+        self.style_dropdown = TTK.Combobox(state='readonly',
                                            values=['None', '-', '--', '-.', ':'],
                                            width=27,
                                            height=10)
@@ -113,7 +113,7 @@ class GUI:
         self.style_dropdown.set('-')
         self.style_dropdown.grid(row=7, column=0, columnspan=1)
 
-        self.marker_dropdown = TKK.Combobox(state='readonly',
+        self.marker_dropdown = TTK.Combobox(state='readonly',
                                             values=['None', '.', ',', 'o', 'v', '^', '<', '>',
                                                     '1', '2', '3', '4', '8', 's', 'p', 'P', '*',
                                                     'h', 'H', '+', 'x', 'X', 'D', 'd', '|', '_'],
@@ -198,39 +198,40 @@ class GUI:
         self.ylabel_button.grid(row=7, column=1)
 
         self.plot_button = tkinter.Button(text="Plot Selected",
-                                          command=lambda: self.plot_fn(),
+                                          command=lambda: self.plot_popup(),
                                           width=25,
                                           height=1)
         self.plot_button.grid(row=8, column=1)
 
-        self.file_dropdown = TKK.Combobox(state='readonly',
+        self.file_dropdown = TTK.Combobox(state='readonly',
                                           values=list(self.filenames.keys()),
                                           width=27,
                                           height=10)
+        self.file_dropdown.bind("<<ComboboxSelected>>", self.file_fn)
         self.file_dropdown.grid(row=10, column=1, columnspan=1)
 
-        self.header_dropdown = TKK.Combobox(state='readonly',
+        self.header_dropdown = TTK.Combobox(state='readonly',
                                             values=[],
                                             width=27,
                                             height=10)
         self.header_dropdown.bind("<<ComboboxSelected>>", self.header_fn)
         self.header_dropdown.grid(row=11, column=1, columnspan=1)
 
-        self.xaxis_dropdown = TKK.Combobox(state='readonly',
+        self.xaxis_dropdown = TTK.Combobox(state='readonly',
                                            values=[],
                                            width=27,
                                            height=10)
         self.xaxis_dropdown.bind("<<ComboboxSelected>>", self.xaxis_fn)
         self.xaxis_dropdown.grid(row=12, column=1, columnspan=1)
 
-        self.yaxis_dropdown = TKK.Combobox(state='readonly',
+        self.yaxis_dropdown = TTK.Combobox(state='readonly',
                                            values=[],
                                            width=27,
                                            height=10)
         self.yaxis_dropdown.bind("<<ComboboxSelected>>", self.yaxis_fn)
         self.yaxis_dropdown.grid(row=13, column=1, columnspan=1)
 
-        self.series_dropdown = TKK.Combobox(state='readonly',
+        self.series_dropdown = TTK.Combobox(state='readonly',
                                             values=[],
                                             width=27,
                                             height=10)
@@ -259,17 +260,103 @@ class GUI:
                                           height=1)
         self.cmax_button.grid(row=2, column=2)
 
+        self.resultant_button = tkinter.Button(text="Calculate Resultant",
+                                               command=lambda: self.resultant_popup(),
+                                               width=25,
+                                               height=1)
+        self.resultant_button.grid(row=3, column=2)
+        # self.resultant_popup()
+
         # self.shift_time_var1 = tkinter.StringVar(value=f'Select Starting Time ({self.cfc if self.cfc != 0 else "no start time selected"})')
         # self.shift_time_button1 = tkinter.Button(textvariable=self.shift_time_var1, command= lambda: self.)
+
+    @catch
+    def resultant_popup(self):
+        if self.xaxis_dropdown.get():
+            def selectall():
+                keys = [k for k in checkboxes if checkboxes[k]['bool'].get()]
+                xkey = self.xaxis_dropdown.get()
+                array = np.zeros_like(self.data[xkey])
+                for key in keys:
+                    array += self.data[key].to_numpy() ** 2
+
+                ser = pd.Series(np.sqrt(array))
+
+                self.series['resultant'] = {'xdata': self.data[xkey],
+                                            'ydata': ser,
+                                            'cfc': self.cfc,
+                                            'xscale': 1,
+                                            'yscale': 1,
+                                            'xoffset': 0,
+                                            'yoffset': 0,
+                                            'trim': (self.data[xkey].min(), self.data[xkey].max()),
+                                            'color': '#000000',
+                                            'style': '-',
+                                            'marker': 'None',
+                                            'width': 2
+                                            }
+                self.series_dropdown['values'] = list(self.series.keys())
+                self.series_dropdown.set('resultant')
+                self.series_fn(None)
+                win.destroy()
+
+            win = tkinter.Toplevel()
+            win.wm_title("RESULTANT")
+            # win.geometry('200x300')
+
+            l = tkinter.Label(win, text="select all data series to be used in calculating resultant")
+            l.grid(row=0, column=0)
+            checkboxes = {}
+
+            for i, value in enumerate(self.yaxis_dropdown['values']):
+                x = (i + 3) % 10
+                y = (i + 3) // 10
+                checkboxes[value] = {'bool': tkinter.BooleanVar()}
+                checkboxes[value]['checkbox'] = TTK.Checkbutton(win, text=value, variable=checkboxes[value]['bool'])
+                checkboxes[value]['checkbox'].grid(row=x, column=y)
+
+            b = TTK.Button(win, text="Okay", command=selectall)
+            b.grid(row=1, column=0)
+            b2 = TTK.Button(win, text="Check",
+                            command=lambda: print([f"{k}: {checkboxes[k]['bool'].get()}" for k in checkboxes]))
+            b2.grid(row=2, column=0)
+        else:
+            messagebox.showerror('Doofus Elert', 'select x axis data')
+
+    @catch
+    def plot_popup(self):
+        def selectall():
+            keys = [k for k in checkboxes if checkboxes[k]['bool'].get()]
+            win.destroy()
+            self.plot(keys)
+
+        win = tkinter.Toplevel()
+        win.wm_title("SELECT SERIES")
+        # win.geometry('200x300')
+
+        l = tkinter.Label(win, text="select all data series to plot")
+        l.grid(row=0, column=0)
+        checkboxes = {}
+
+        for i, value in enumerate(self.series_dropdown['values']):
+            x = (i + 2) % 10
+            y = (i + 2) // 10
+            checkboxes[value] = {'bool': tkinter.BooleanVar()}
+            checkboxes[value]['checkbox'] = TTK.Checkbutton(win, text=value, variable=checkboxes[value]['bool'])
+            checkboxes[value]['checkbox'].grid(row=x, column=y)
+
+        b = TTK.Button(win, text="Plot", command=selectall)
+        b.grid(row=1, column=0)
+        # print('plot called now')
 
     def browse_fn(self):
         """
         browse and select files
         :return:
         """
-        self.files = {*self.files,
-                      *{file for file in filedialog.askopenfilenames(filetypes=[('CSV', '.csv'), ('binout', '*')])
-                        if check_file(file)}}
+        self.files = [*self.files,
+                      *[file for file in filedialog.askopenfilenames(filetypes=[('CSV', '.csv'), ('binout', '*')])
+                        if check_file(file) and file not in self.files]]
         self.update_filenames()
 
     @catch
@@ -279,8 +366,7 @@ class GUI:
         :return:
         """
         skey = self.series_dropdown.get()
-        icolor = self.series[skey]['color']
-        color = colorchooser.askcolor(initialcolor=icolor)
+        color = colorchooser.askcolor(initialcolor=self.series[skey]['color'])
         if color[0]:
             print(color)
             self.series[skey]['color'] = color[1]
@@ -301,11 +387,11 @@ class GUI:
         self.xaxis_dropdown['values'] = []
         self.yaxis_dropdown['values'] = []
         if self.ext == '.csv':
+            self.data, self.text = open_csv(self.filenames[key])
+
             self.column_var.set("header selection")
             self.xaxis_var.set("x axis selection")
             self.yaxis_var.set("y axis selection")
-
-            self.data, self.text = open_csv(self.filenames[key])
             # self.binout = Binout
             if self.text.ndim > 1:
                 self.text_rows = {' '.join([str(i) for i in row]):
@@ -368,27 +454,33 @@ class GUI:
         add binout to data series
         :return:
         """
-        key1 = self.header_dropdown.get()
-        key2 = self.xaxis_dropdown.get()
-        key3 = self.yaxis_dropdown.get()
+        # key1 = self.header_dropdown.get()
+        # key2 = self.xaxis_dropdown.get()
+        # key3 = self.yaxis_dropdown.get()
+        #
+        # if key3:
+        #     index = list(self.data.read(key1, 'ids')).index(int(key3))
+        # else:
+        #     index = 0
+        #
+        # if key1 and key2:
+        #     options1 = [key1, 'time']
+        #     options2 = [key1, key2]
 
-        if key3:
-            index = list(self.data.read(key1, 'ids')).index(int(key3))
-        else:
-            index = 0
+        datax, datay = read_binout(self.data, (key1 := self.header_dropdown.get(),
+                                               key2 := self.xaxis_dropdown.get(),
+                                               key3 := self.yaxis_dropdown.get()))
 
-        if key1 and key2:
-            options1 = [key1, 'time']
-            options2 = [key1, key2]
+        if datax is not None:
 
-            self.series[f"{key2} {key3}"] = {'xdata': pd.Series(self.data.read(*options1)),
-                                             'ydata': pd.Series(self.data.read(*options2)[:, index]),
+            self.series[f"{key2} {key3}"] = {'xdata': pd.Series(datax),
+                                             'ydata': pd.Series(datay),
                                              'cfc': self.cfc,
                                              'xscale': 1,
                                              'yscale': 1,
                                              'xoffset': 0,
                                              'yoffset': 0,
-                                             'trim': (self.data.read(*options1).min(), self.data.read(*options1).max()),
+                                             'trim': (datax.min(), datax.max()),
                                              'color': '#000000',
                                              'style': '-',
                                              'marker': 'None',
@@ -418,7 +510,7 @@ class GUI:
             print((lower_lim, upper_lim))
 
     @catch
-    def plot_fn(self):
+    def plot(self, selected_series):
         """
         plot all current data series
         :return:
@@ -428,7 +520,7 @@ class GUI:
             self.legend.clear()
         plt.figure(1)
 
-        for key in self.series:
+        for key in selected_series:
             xdata, ydata = process_series(self.series[key])
 
             plt.plot(xdata,
@@ -551,6 +643,14 @@ class GUI:
             if self.series_dropdown.get():
                 self.series[self.series_dropdown.get()]['cfc'] = cfc
             print(self.cfc)
+
+    def file_fn(self, event: tkinter.Event | None):
+        """
+        execute on file dropdown selection
+        :param event:
+        :return:
+        """
+        print(self.filenames[self.file_dropdown.get()])
 
     def header_fn(self, event: tkinter.Event | None):
         """
