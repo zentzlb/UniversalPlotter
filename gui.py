@@ -12,8 +12,6 @@ from Nij import neck_AIS
 from lasso.dyna import Binout
 from math import cos, sin, tan, acos, asin, atan, atan2, pi, e
 
-from test2 import SimpleChoiceBox
-
 import matplotlib.pyplot as plt
 
 from filters import CFC_filter

@@ -16,13 +16,13 @@ def chest_AIS3(cmax):
         1.0193,  # is driver
         -8.4238,  # airbag loading
         -3.8875,  # combined loading
-        0.1696
+        0.1696  # cmax
     ]
 
     x = [
         1,  # male
         77.7,  # mass (kg)
-        60,  # age
+        45,  # age
         40.2336,  # sled speed (km/hr) 51.5
         0,  # is driver
         1,  # airbag loading
