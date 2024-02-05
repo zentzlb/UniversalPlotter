@@ -1,4 +1,4 @@
-import math
+from math import exp
 import numpy as np
 
 
@@ -23,7 +23,7 @@ def neck_AIS(nij: float, age: int = 45) -> tuple[float, float]:
     :param age:
     :return:
     """
-    ais2 = 1 / (1 + math.exp(9.031 - 5.681 * nij - 0.0803 * age))
-    ais3 = 1 / (1 + math.exp(7.447 - 5.440 * nij - 0.0350 * age))
+    ais2 = 1 / (1 + exp(9.031 - 5.681 * nij - 0.0803 * age))
+    ais3 = 1 / (1 + exp(7.447 - 5.440 * nij - 0.0350 * age))
 
     return min(ais2 - ais3, 0), ais3

@@ -10,6 +10,7 @@ from HIC15 import hic15, hic_ais
 from Cmax import chest_AIS3
 from Nij import neck_AIS
 from lasso.dyna import Binout
+from femur import femur_ais2
 from math import cos, sin, tan, acos, asin, atan, atan2, pi, e
 
 import matplotlib.pyplot as plt
@@ -258,11 +259,17 @@ class GUI:
                                           height=1)
         self.cmax_button.grid(row=2, column=2)
 
+        self.cmax_button = tkinter.Button(text="Femur",
+                                          command=lambda: self.femur_fn(),
+                                          width=25,
+                                          height=1)
+        self.cmax_button.grid(row=3, column=2)
+
         self.resultant_button = tkinter.Button(text="Calculate Resultant",
                                                command=lambda: self.resultant_popup(),
                                                width=25,
                                                height=1)
-        self.resultant_button.grid(row=3, column=2)
+        self.resultant_button.grid(row=4, column=2)
         # self.resultant_popup()
 
         # self.shift_time_var1 = tkinter.StringVar(value=f'Select Starting Time ({self.cfc if self.cfc != 0 else "no start time selected"})')
@@ -575,9 +582,31 @@ class GUI:
         my_norm = np.array([my_fn(my) for my in self.data['Neck Upper Moment Y'].to_numpy()])
         nij = max(fz_norm + my_norm)
         ais2, ais3 = neck_AIS(nij)
-        messagebox.showinfo('Nij', f'Nij: {nij:0.1f}\n'
+        messagebox.showinfo('Nij', f'Nij: {nij:0.2f}\n'
                                    f'AIS2 Risk: {100 * ais2:0.2f}%\n'
                                    f'AIS3+ Risk: {100 * ais3:0.2f}%\n')
+
+    @catch
+    def femur_fn(self):
+        """
+        calculate femur injury risk
+        :return:
+        """
+        risk_r, force_r = femur_ais2(self.data['Femur Right Force X'],
+                                     self.data['Femur Right Force Y'],
+                                     self.data['Femur Right Force Z'])
+
+        risk_l, force_l = femur_ais2(self.data['Femur Left Force X'],
+                                     self.data['Femur Left Force Y'],
+                                     self.data['Femur Left Force Z'])
+
+        messagebox.showinfo('Femur Injury Risk',
+                            f'Right Femur\n'
+                            f'Force: {force_r:0.1f}\n'
+                            f'AIS2+ Risk: {100 * risk_r:0.2f}%\n'
+                            f'Right Femur\n'
+                            f'Force: {force_r:0.1f}\n'
+                            f'AIS2+ Risk: {100 * risk_l:0.2f}%\n')
 
     def clear_fn(self):
         """
