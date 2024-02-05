@@ -99,7 +99,7 @@ def process_series(dic: dict) -> tuple[np.ndarray, np.ndarray]:
     index = xseries[(xseries >= dic['trim'][0]) & (xseries <= dic['trim'][1])].index
     xseries, yseries = xseries[index[0]:index[-1] + 1], yseries[index[0]:index[-1] + 1]
 
-    if dic['cfc'] != 0:
+    if dic['cfc'] != 0 and type(dic['cfc']) is int:
         ydata = CFC_filter(1 / 10000, yseries.to_numpy(), dic['cfc'])
     else:
         ydata = yseries.to_numpy()

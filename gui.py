@@ -277,12 +277,15 @@ class GUI:
                 array = np.zeros_like(self.data[xkey])
                 for key in keys:
                     array += self.data[key].to_numpy() ** 2
-
-                ser = pd.Series(np.sqrt(array))
+                if self.cfc != 0:
+                    ydata = CFC_filter(1 / 10000, np.sqrt(array), self.cfc)
+                else:
+                    ydata = np.sqrt(array)
+                ser = pd.Series(ydata)
 
                 self.series['resultant'] = {'xdata': self.data[xkey],
                                             'ydata': ser,
-                                            'cfc': self.cfc,
+                                            'cfc': str(self.cfc),
                                             'xscale': 1,
                                             'yscale': 1,
                                             'xoffset': 0,
@@ -567,16 +570,14 @@ class GUI:
         calculate neck injury risk based on Nij
         :return:
         """
-        my_fn = lambda x: x / 310 if x > 0 else x / 125
-        fz_norm = self.data['Neck Upper Force Z'].to_numpy() / 4500
+        my_fn = lambda x: x / 310 if x > 0 else -x / 125
+        fz_norm = abs(self.data['Neck Upper Force Z'].to_numpy() / 4500)
         my_norm = np.array([my_fn(my) for my in self.data['Neck Upper Moment Y'].to_numpy()])
         nij = max(fz_norm + my_norm)
-        ais2, ais3, ais4, ais5 = neck_AIS(nij)
+        ais2, ais3 = neck_AIS(nij)
         messagebox.showinfo('Nij', f'Nij: {nij:0.1f}\n'
-                                   f'AIS2+ Risk: {100 * ais2:0.2f}%\n'
-                                   f'AIS3+ Risk: {100 * ais3:0.2f}%\n'
-                                   f'AIS4+ Risk: {100 * ais4:0.2f}%\n'
-                                   f'AIS5+ Risk: {100 * ais5:0.2f}%\n')
+                                   f'AIS2 Risk: {100 * ais2:0.2f}%\n'
+                                   f'AIS3+ Risk: {100 * ais3:0.2f}%\n')
 
     def clear_fn(self):
         """
@@ -627,8 +628,11 @@ class GUI:
         CFC filter
         :return:
         """
+        series = self.series_dropdown.get()
         cfc = simpledialog.askinteger('CFC filtering',
-                                      'enter CFC filter type (0 is unfiltered)',
+                                      f'enter CFC filter type (0 is unfiltered)\n'
+                                      f'{"series filter: " + str(self.series[series]["cfc"]) if series else ""}\n'
+                                      f'{"UNCHANGEABLE" if series and type(self.series[series]["cfc"]) is str else ""}',
                                       minvalue=0,
                                       maxvalue=1000,
                                       initialvalue=self.cfc)
@@ -638,9 +642,12 @@ class GUI:
                 f'Select Filter ({"CFC " if self.cfc != 0 else ""}'
                 f'{self.cfc if self.cfc != 0 else "no filter"})'
             )
-            if self.series_dropdown.get():
-                self.series[self.series_dropdown.get()]['cfc'] = cfc
+            if series and type(self.series[series]["cfc"]) is int:
+                self.series[series]['cfc'] = cfc
             print(self.cfc)
+        # else:
+        #     messagebox.showerror('Series Filter Cannot Be Changed',
+        #                          'please contact developer for further explanation')
 
     def file_fn(self, event: tkinter.Event | None):
         """
@@ -689,7 +696,7 @@ class GUI:
     def series_fn(self, event: tkinter.Event | None):
         key = self.series_dropdown.get()
         if key:
-            self.cfc = self.series[key]['cfc']
+            self.cfc = int(self.series[key]['cfc'])
         else:
             self.cfc = 0
         self.update_buttons()
