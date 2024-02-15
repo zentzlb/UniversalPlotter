@@ -1,7 +1,7 @@
 # from tkinter import Tk, filedialog, StringVar
 import os
 import time
-import tkinter
+# import tkinter
 import tkinter.simpledialog
 from tkinter import filedialog, simpledialog, commondialog, dialog, colorchooser
 from tkinter import ttk as TTK, messagebox
@@ -49,6 +49,7 @@ class GUI:
         self.legend = []
         self.xlabel = ''
         self.ylabel = ''
+        self.title = ''
 
         ##############
         #  COLUMN 0  #
@@ -196,11 +197,18 @@ class GUI:
                                             height=1)
         self.ylabel_button.grid(row=7, column=1)
 
+        self.title_var = tkinter.StringVar(value='Title')
+        self.title_button = tkinter.Button(textvariable=self.title_var,
+                                            command=lambda: self.title_fn(),
+                                            width=25,
+                                            height=1)
+        self.title_button.grid(row=8, column=1)
+
         self.plot_button = tkinter.Button(text="Plot Selected",
                                           command=lambda: self.plot_popup(),
                                           width=25,
                                           height=1)
-        self.plot_button.grid(row=8, column=1)
+        self.plot_button.grid(row=9, column=1)
 
         self.file_dropdown = TTK.Combobox(state='readonly',
                                           values=list(self.filenames.keys()),
@@ -541,6 +549,7 @@ class GUI:
         plt.xlabel(self.xlabel)
         plt.ylabel(self.ylabel)
         plt.legend(self.legend)
+        plt.title(self.title)
         plt.show()
 
     @catch
@@ -831,6 +840,14 @@ class GUI:
         if name:
             self.ylabel = name
             self.ylabel_var.set(f'Y Label {self.ylabel}')
+
+    def title_fn(self):
+        name = tkinter.simpledialog.askstring('TITLE',
+                                              'enter graph title',
+                                              initialvalue=self.title)
+        if name:
+            self.title = name
+            self.title_var.set(f'Title: {self.title}')
 
     @catch
     def xscale_fn(self):
