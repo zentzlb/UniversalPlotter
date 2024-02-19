@@ -1,17 +1,19 @@
 # from tkinter import Tk, filedialog, StringVar
+import math
 import os
 import time
 # import tkinter
-import tkinter.simpledialog
-from tkinter import filedialog, simpledialog, commondialog, dialog, colorchooser
-from tkinter import ttk as TTK, messagebox
+# import simpledialog
+from tkinter import (filedialog, simpledialog, commondialog, dialog, messagebox, colorchooser, Tk, Button,
+                     Toplevel, Label, BooleanVar, StringVar, Scale, Event, mainloop)
+from tkinter import ttk as TTK
 from utils import catch, check_file, check_ext, trim_series, process_series, enumerator
 from HIC15 import hic15, hic_ais
 from Cmax import chest_AIS3
 from Nij import neck_AIS
 from lasso.dyna import Binout
 from femur import femur_ais2
-from math import cos, sin, tan, acos, asin, atan, atan2, pi, e
+from math import cos, sin, tan, acos, asin, atan, atan2, pi, e, inf, log
 
 import matplotlib.pyplot as plt
 
@@ -34,9 +36,8 @@ class GUI:
     """
 
     def __init__(self):
-        self.root = tkinter.Tk()
+        self.root = Tk()
         self.root.title('CSV Plotter')
-
         self.files = []  # set()
         self.filenames = {}
         self.text_rows = {}
@@ -46,6 +47,7 @@ class GUI:
         self.series = {}
         self.text = np.array([])
         self.cfc = 0
+        self.trim = (-inf, inf)
         self.legend = []
         self.xlabel = ''
         self.ylabel = ''
@@ -55,54 +57,54 @@ class GUI:
         #  COLUMN 0  #
         ##############
 
-        self.filter_var = tkinter.StringVar(value=f'Select Filter '
-                                                  f'({self.cfc if self.cfc != 0 else "no filter"})')
-        self.filter_button = tkinter.Button(textvariable=self.filter_var,
-                                            command=lambda: self.filter_fn(),
-                                            width=25,
-                                            height=1)
+        self.filter_var = StringVar(value=f'Select Filter '
+                                          f'({self.cfc if self.cfc != 0 else "no filter"})')
+        self.filter_button = Button(textvariable=self.filter_var,
+                                    command=lambda: self.filter_fn(),
+                                    width=25,
+                                    height=1)
         self.filter_button.grid(row=0, column=0)
 
-        self.trim_var = tkinter.StringVar(value=f'Trim Data')
-        self.trim_button = tkinter.Button(textvariable=self.trim_var,
-                                          command=lambda: self.trim_fn(),
-                                          width=25,
-                                          height=1)
+        self.trim_var = StringVar(value=f'Trim Data')
+        self.trim_button = Button(textvariable=self.trim_var,
+                                  command=lambda: self.trim_popup(),
+                                  width=25,
+                                  height=1)
         self.trim_button.grid(row=1, column=0)
 
-        self.xscale_var = tkinter.StringVar(value=f'X Scale')
-        self.xscale_button = tkinter.Button(textvariable=self.xscale_var,
-                                            command=lambda: self.xscale_fn(),
-                                            width=25,
-                                            height=1)
+        self.xscale_var = StringVar(value=f'X Scale')
+        self.xscale_button = Button(textvariable=self.xscale_var,
+                                    command=lambda: self.xscale_fn(),
+                                    width=25,
+                                    height=1)
         self.xscale_button.grid(row=2, column=0)
 
-        self.yscale_var = tkinter.StringVar(value=f'Y Scale')
-        self.yscale_button = tkinter.Button(textvariable=self.yscale_var,
-                                            command=lambda: self.yscale_fn(),
-                                            width=25,
-                                            height=1)
+        self.yscale_var = StringVar(value=f'Y Scale')
+        self.yscale_button = Button(textvariable=self.yscale_var,
+                                    command=lambda: self.yscale_fn(),
+                                    width=25,
+                                    height=1)
         self.yscale_button.grid(row=3, column=0)
 
-        self.xoff_var = tkinter.StringVar(value=f'X Offset')
-        self.xoff_button = tkinter.Button(textvariable=self.xoff_var,
-                                          command=lambda: self.xoff_fn(),
-                                          width=25,
-                                          height=1)
+        self.xoff_var = StringVar(value=f'X Offset')
+        self.xoff_button = Button(textvariable=self.xoff_var,
+                                  command=lambda: self.xoff_fn(),
+                                  width=25,
+                                  height=1)
         self.xoff_button.grid(row=4, column=0)
 
-        self.yoff_var = tkinter.StringVar(value=f'Y Offset')
-        self.yoff_button = tkinter.Button(textvariable=self.yoff_var,
-                                          command=lambda: self.yoff_fn(),
-                                          width=25,
-                                          height=1)
+        self.yoff_var = StringVar(value=f'Y Offset')
+        self.yoff_button = Button(textvariable=self.yoff_var,
+                                  command=lambda: self.yoff_fn(),
+                                  width=25,
+                                  height=1)
         self.yoff_button.grid(row=5, column=0)
 
-        self.color_var = tkinter.StringVar(value="Set Color")
-        self.color_button = tkinter.Button(textvariable=self.color_var,
-                                           command=lambda: self.color_fn(),
-                                           width=25,
-                                           height=1)
+        self.color_var = StringVar(value="Set Color")
+        self.color_button = Button(textvariable=self.color_var,
+                                   command=lambda: self.color_fn(),
+                                   width=25,
+                                   height=1)
         self.color_button.grid(row=6, column=0)
 
         self.style_dropdown = TTK.Combobox(state='readonly',
@@ -123,91 +125,91 @@ class GUI:
         self.marker_dropdown.set('None')
         self.marker_dropdown.grid(row=8, column=0, columnspan=1)
 
-        self.file_var = tkinter.StringVar(value='file selection')
-        self.file_label = tkinter.Label(master=self.root, textvariable=self.file_var)
+        self.file_var = StringVar(value='file selection')
+        self.file_label = Label(master=self.root, textvariable=self.file_var)
         self.file_label.grid(row=10, column=0)
 
-        self.column_var = tkinter.StringVar(value='header selection')
-        self.column_label = tkinter.Label(master=self.root, textvariable=self.column_var)
+        self.column_var = StringVar(value='header selection')
+        self.column_label = Label(master=self.root, textvariable=self.column_var)
         self.column_label.grid(row=11, column=0)
 
-        self.xaxis_var = tkinter.StringVar(value='x axis selection')
-        self.xaxis_label = tkinter.Label(master=self.root, textvariable=self.xaxis_var)
+        self.xaxis_var = StringVar(value='x axis selection')
+        self.xaxis_label = Label(master=self.root, textvariable=self.xaxis_var)
         self.xaxis_label.grid(row=12, column=0)
 
-        self.yaxis_var = tkinter.StringVar(value='y axis selection')
-        self.yaxis_label = tkinter.Label(master=self.root, textvariable=self.yaxis_var)
+        self.yaxis_var = StringVar(value='y axis selection')
+        self.yaxis_label = Label(master=self.root, textvariable=self.yaxis_var)
         self.yaxis_label.grid(row=13, column=0)
 
-        self.series_var = tkinter.StringVar(value='series selection')
-        self.series_label = tkinter.Label(master=self.root, textvariable=self.series_var)
+        self.series_var = StringVar(value='series selection')
+        self.series_label = Label(master=self.root, textvariable=self.series_var)
         self.series_label.grid(row=14, column=0)
 
         ##############
         #  COLUMN 1  #
         ##############
 
-        self.browse_button = tkinter.Button(text="Browse Files",
-                                            command=lambda: self.browse_fn(),
-                                            width=25,
-                                            height=1)
+        self.browse_button = Button(text="Browse Files",
+                                    command=lambda: self.browse_fn(),
+                                    width=25,
+                                    height=1)
         self.browse_button.grid(row=0, column=1)
 
-        self.open_button = tkinter.Button(text="Open Selected File",
-                                          command=lambda: self.open_fn(),
-                                          width=25,
-                                          height=1)
+        self.open_button = Button(text="Open Selected File",
+                                  command=lambda: self.open_fn(),
+                                  width=25,
+                                  height=1)
         self.open_button.grid(row=1, column=1)
 
-        self.clear_button = tkinter.Button(text="Reset All",
-                                           command=lambda: self.clear_fn(),
-                                           width=25,
-                                           height=1)
+        self.clear_button = Button(text="Reset All",
+                                   command=lambda: self.clear_fn(),
+                                   width=25,
+                                   height=1)
         self.clear_button.grid(row=2, column=1)
 
-        self.del_button = tkinter.Button(text="Delete Selected Series",
-                                         command=lambda: self.del_series(),
-                                         width=25,
-                                         height=1)
+        self.del_button = Button(text="Delete Selected Series",
+                                 command=lambda: self.del_series(),
+                                 width=25,
+                                 height=1)
         self.del_button.grid(row=3, column=1)
 
-        self.add_button = tkinter.Button(text="Add To Data Series",
-                                         command=lambda: self.addseries_fn(),
-                                         width=25,
-                                         height=1)
+        self.add_button = Button(text="Add To Data Series",
+                                 command=lambda: self.addseries_fn(),
+                                 width=25,
+                                 height=1)
         self.add_button.grid(row=4, column=1)
 
-        self.changeseries_button = tkinter.Button(text='Change Series Name',
-                                                  command=lambda: self.changeseries_fn(),
-                                                  width=25,
-                                                  height=1)
-        self.changeseries_button.grid(row=5, column=1)
-
-        self.xlabel_var = tkinter.StringVar(value='X Label')
-        self.xlabel_button = tkinter.Button(textvariable=self.xlabel_var,
-                                            command=lambda: self.xlabel_fn(),
-                                            width=25,
-                                            height=1)
-        self.xlabel_button.grid(row=6, column=1)
-
-        self.ylabel_var = tkinter.StringVar(value='Y Label')
-        self.ylabel_button = tkinter.Button(textvariable=self.ylabel_var,
-                                            command=lambda: self.ylabel_fn(),
-                                            width=25,
-                                            height=1)
-        self.ylabel_button.grid(row=7, column=1)
-
-        self.title_var = tkinter.StringVar(value='Title')
-        self.title_button = tkinter.Button(textvariable=self.title_var,
-                                            command=lambda: self.title_fn(),
-                                            width=25,
-                                            height=1)
-        self.title_button.grid(row=8, column=1)
-
-        self.plot_button = tkinter.Button(text="Plot Selected",
-                                          command=lambda: self.plot_popup(),
+        self.changeseries_button = Button(text='Change Series Name',
+                                          command=lambda: self.changeseries_fn(),
                                           width=25,
                                           height=1)
+        self.changeseries_button.grid(row=5, column=1)
+
+        self.xlabel_var = StringVar(value='X Label')
+        self.xlabel_button = Button(textvariable=self.xlabel_var,
+                                    command=lambda: self.xlabel_fn(),
+                                    width=25,
+                                    height=1)
+        self.xlabel_button.grid(row=6, column=1)
+
+        self.ylabel_var = StringVar(value='Y Label')
+        self.ylabel_button = Button(textvariable=self.ylabel_var,
+                                    command=lambda: self.ylabel_fn(),
+                                    width=25,
+                                    height=1)
+        self.ylabel_button.grid(row=7, column=1)
+
+        self.title_var = StringVar(value='Title')
+        self.title_button = Button(textvariable=self.title_var,
+                                   command=lambda: self.title_fn(),
+                                   width=25,
+                                   height=1)
+        self.title_button.grid(row=8, column=1)
+
+        self.plot_button = Button(text="Plot Selected",
+                                  command=lambda: self.plot_popup(),
+                                  width=25,
+                                  height=1)
         self.plot_button.grid(row=9, column=1)
 
         self.file_dropdown = TTK.Combobox(state='readonly',
@@ -249,44 +251,44 @@ class GUI:
         #  COLUMN 2  #
         ##############
 
-        self.hic15_button = tkinter.Button(text="HIC15",
-                                           command=lambda: self.hic15_fn(),
-                                           width=25,
-                                           height=1)
+        self.hic15_button = Button(text="HIC15",
+                                   command=lambda: self.hic15_fn(),
+                                   width=25,
+                                   height=1)
         self.hic15_button.grid(row=0, column=2)
 
-        self.nij_button = tkinter.Button(text="Nij",
-                                         command=lambda: self.nij_fn(),
-                                         width=25,
-                                         height=1)
+        self.nij_button = Button(text="Nij",
+                                 command=lambda: self.nij_fn(),
+                                 width=25,
+                                 height=1)
         self.nij_button.grid(row=1, column=2)
 
-        self.cmax_button = tkinter.Button(text="Cmax",
-                                          command=lambda: self.cmax_fn(),
-                                          width=25,
-                                          height=1)
+        self.cmax_button = Button(text="Cmax",
+                                  command=lambda: self.cmax_fn(),
+                                  width=25,
+                                  height=1)
         self.cmax_button.grid(row=2, column=2)
 
-        self.cmax_button = tkinter.Button(text="Femur",
-                                          command=lambda: self.femur_fn(),
-                                          width=25,
-                                          height=1)
+        self.cmax_button = Button(text="Femur",
+                                  command=lambda: self.femur_fn(),
+                                  width=25,
+                                  height=1)
         self.cmax_button.grid(row=3, column=2)
 
-        self.resultant_button = tkinter.Button(text="Calculate Resultant",
-                                               command=lambda: self.resultant_popup(),
-                                               width=25,
-                                               height=1)
+        self.resultant_button = Button(text="Calculate Resultant",
+                                       command=lambda: self.resultant_popup(),
+                                       width=25,
+                                       height=1)
         self.resultant_button.grid(row=4, column=2)
         # self.resultant_popup()
 
-        # self.shift_time_var1 = tkinter.StringVar(value=f'Select Starting Time ({self.cfc if self.cfc != 0 else "no start time selected"})')
-        # self.shift_time_button1 = tkinter.Button(textvariable=self.shift_time_var1, command= lambda: self.)
+        # self.shift_time_var1 = StringVar(value=f'Select Starting Time ({self.cfc if self.cfc != 0 else "no start time selected"})')
+        # self.shift_time_button1 = Button(textvariable=self.shift_time_var1, command= lambda: self.)
 
     @catch
     def resultant_popup(self):
         if self.xaxis_dropdown.get():
-            def selectall():
+            def select_all():
                 keys = [k for k in checkboxes if checkboxes[k]['bool'].get()]
                 xkey = self.xaxis_dropdown.get()
                 array = np.zeros_like(self.data[xkey])
@@ -316,22 +318,22 @@ class GUI:
                 self.series_fn(None)
                 win.destroy()
 
-            win = tkinter.Toplevel()
+            win = Toplevel()
             win.wm_title("RESULTANT")
             # win.geometry('200x300')
 
-            l = tkinter.Label(win, text="select all data series to be used in calculating resultant")
+            l = Label(win, text="select all data series to be used in calculating resultant")
             l.grid(row=0, column=0)
             checkboxes = {}
 
             for i, value in enumerate(self.yaxis_dropdown['values']):
                 x = (i + 3) % 10
                 y = (i + 3) // 10
-                checkboxes[value] = {'bool': tkinter.BooleanVar()}
+                checkboxes[value] = {'bool': BooleanVar()}
                 checkboxes[value]['checkbox'] = TTK.Checkbutton(win, text=value, variable=checkboxes[value]['bool'])
                 checkboxes[value]['checkbox'].grid(row=x, column=y)
 
-            b = TTK.Button(win, text="Okay", command=selectall)
+            b = TTK.Button(win, text="Okay", command=select_all)
             b.grid(row=1, column=0)
             b2 = TTK.Button(win, text="Check",
                             command=lambda: print([f"{k}: {checkboxes[k]['bool'].get()}" for k in checkboxes]))
@@ -341,29 +343,123 @@ class GUI:
 
     @catch
     def plot_popup(self):
-        def selectall():
+        def select_all():
             keys = [k for k in checkboxes if checkboxes[k]['bool'].get()]
             win.destroy()
             self.plot(keys)
 
-        win = tkinter.Toplevel()
+        win = Toplevel()
         win.wm_title("SELECT SERIES")
         # win.geometry('200x300')
 
-        l = tkinter.Label(win, text="select all data series to plot")
+        l = Label(win, text="select all data series to plot")
         l.grid(row=0, column=0)
         checkboxes = {}
 
         for i, value in enumerate(self.series_dropdown['values']):
             x = (i + 2) % 10
             y = (i + 2) // 10
-            checkboxes[value] = {'bool': tkinter.BooleanVar()}
+            checkboxes[value] = {'bool': BooleanVar()}
             checkboxes[value]['checkbox'] = TTK.Checkbutton(win, text=value, variable=checkboxes[value]['bool'])
             checkboxes[value]['checkbox'].grid(row=x, column=y)
 
-        b = TTK.Button(win, text="Plot", command=selectall)
+        b = TTK.Button(win, text="Plot", command=select_all)
         b.grid(row=1, column=0)
         # print('plot called now')
+
+    @catch
+    def trim_popup(self):
+
+        def set_lower():
+            value = simpledialog.askfloat('Set Lower Limit',
+                                          'enter lower limit',
+                                          minvalue=minimum,
+                                          maxvalue=slider_max.get(),
+                                          initialvalue=slider_min.get())
+            if value is not None:
+                slider_min.set(value)
+
+        def set_upper():
+            value = simpledialog.askfloat('Set Upper Limit',
+                                          'enter upper limit',
+                                          minvalue=slider_min.get(),
+                                          maxvalue=maximum,
+                                          initialvalue=slider_max.get())
+
+            if value is not None:
+                slider_max.set(value)
+
+        def set_trim():
+            self.trim = (slider_min.get(), slider_max.get())
+            min_var.set(f"default min: {self.trim[0]:0.4}")
+            max_var.set(f"default max: {self.trim[1]:0.4}")
+
+        def reset_trim():
+            self.trim = (-inf, inf)
+            min_var.set(f"default min: {self.trim[0]:0.4}")
+            max_var.set(f"default max: {self.trim[1]:0.4}")
+
+        def set_lims():
+            self.series[skey]['trim'] = (slider_min.get(), slider_max.get())
+            win.destroy()
+
+        skey = self.series_dropdown.get()
+        minimum = self.series[skey]['xdata'].min()
+        maximum = self.series[skey]['xdata'].max()
+        # math
+
+        win = Toplevel()
+        win.wm_title("TRIM")
+        # win.geometry('200x300')
+
+        l_min = Label(win, text="MIN")
+        l_min.grid(row=0, column=0)
+
+        l_max = Label(win, text="MAX")
+        l_max.grid(row=0, column=1)
+
+        slider_min = Scale(win,
+                           from_=minimum,
+                           to=maximum,
+                           digits=4,
+                           resolution=0.001,
+                           length=300,
+                           command=lambda x: slider_max.configure(from_=x))
+        slider_min.grid(row=1, column=0)
+        slider_min.set(self.series[skey]['trim'][0])
+
+        slider_max = Scale(win,
+                           from_=minimum,
+                           to=maximum,
+                           digits=4,
+                           resolution=0.001,
+                           length=300,
+                           command=lambda x: slider_min.configure(to=x))
+        slider_max.grid(row=1, column=1)
+        slider_max.set(self.series[skey]['trim'][1])
+
+        min_var = StringVar(value=f"default min: {self.trim[0]:0.4}")
+        min_default = Label(win, textvariable=min_var)
+        min_default.grid(row=2, column=0)
+
+        max_var = StringVar(value=f"default max: {self.trim[1]:0.4}")
+        max_default = Label(win, textvariable=max_var)
+        max_default.grid(row=2, column=1)
+
+        b1 = TTK.Button(win, text="Set Min", command=set_lower, width=20)
+        b1.grid(row=3, column=0)
+
+        b2 = TTK.Button(win, text="Set Max", command=set_upper, width=20)
+        b2.grid(row=3, column=1)
+
+        b3 = TTK.Button(win, text="Set Default", command=set_trim, width=20)
+        b3.grid(row=4, column=0)
+
+        b4 = TTK.Button(win, text="Reset Default", command=reset_trim, width=20)
+        b4.grid(row=4, column=1)
+
+        b5 = TTK.Button(win, text="Set Current", command=set_lims, width=20)
+        b5.grid(row=5, column=0, rowspan=5)
 
     def browse_fn(self):
         """
@@ -427,7 +523,7 @@ class GUI:
             self.yaxis_var.set("id selection")
 
     # def
-
+    @catch
     def addseries_fn(self):
         """
         add data to saved series
@@ -458,7 +554,8 @@ class GUI:
                              'yscale': 1,
                              'xoffset': 0,
                              'yoffset': 0,
-                             'trim': (self.data[xkey].min(), self.data[xkey].max()),
+                             'trim': (max(self.data[xkey].min(), self.trim[0]),
+                                      min(self.data[xkey].max(), self.trim[1])),
                              'color': '#000000',
                              'style': '-',
                              'marker': 'None',
@@ -488,7 +585,6 @@ class GUI:
                                                key3 := self.yaxis_dropdown.get()))
 
         if datax is not None:
-
             self.series[f"{key2} {key3}"] = {'xdata': pd.Series(datax),
                                              'ydata': pd.Series(datay),
                                              'cfc': self.cfc,
@@ -496,7 +592,8 @@ class GUI:
                                              'yscale': 1,
                                              'xoffset': 0,
                                              'yoffset': 0,
-                                             'trim': (datax.min(), datax.max()),
+                                             'trim': (max(datax.min(), self.trim[0]),
+                                                      min(datax.max(), self.trim[1])),
                                              'color': '#000000',
                                              'style': '-',
                                              'marker': 'None',
@@ -687,7 +784,7 @@ class GUI:
         #     messagebox.showerror('Series Filter Cannot Be Changed',
         #                          'please contact developer for further explanation')
 
-    def file_fn(self, event: tkinter.Event | None):
+    def file_fn(self, event: Event | None):
         """
         execute on file dropdown selection
         :param event:
@@ -695,7 +792,7 @@ class GUI:
         """
         print(self.filenames[self.file_dropdown.get()])
 
-    def header_fn(self, event: tkinter.Event | None):
+    def header_fn(self, event: Event | None):
         """
         update columns of opened dataframe
         :param event: dropdown menu selection change
@@ -716,7 +813,7 @@ class GUI:
             self.xaxis_dropdown['values'] = xdrop
             self.yaxis_dropdown['values'] = []
 
-    def xaxis_fn(self, event: tkinter.Event):
+    def xaxis_fn(self, event: Event):
         if type(self.data) is Binout:
             options = (self.header_dropdown.get(), self.xaxis_dropdown.get())
             if len(self.data.read(*options).shape) > 1:
@@ -728,10 +825,10 @@ class GUI:
                 self.yaxis_dropdown['values'] = []
                 self.yaxis_dropdown.set('')
 
-    def yaxis_fn(self, event: tkinter.Event):
+    def yaxis_fn(self, event: Event):
         pass
 
-    def series_fn(self, event: tkinter.Event | None):
+    def series_fn(self, event: Event | None):
         key = self.series_dropdown.get()
         if key:
             self.cfc = int(self.series[key]['cfc'])
@@ -747,7 +844,7 @@ class GUI:
 
     # def x_axis_start_shift(self)
 
-    def style_fn(self, event: tkinter.Event | None):
+    def style_fn(self, event: Event | None):
         key = self.series_dropdown.get()
         style = self.style_dropdown.get()
         if key:
@@ -756,7 +853,7 @@ class GUI:
         #     self.cfc = 0
         # self.update_buttons()
 
-    def marker_fn(self, event: tkinter.Event | None):
+    def marker_fn(self, event: Event | None):
         key = self.series_dropdown.get()
         marker = self.marker_dropdown.get()
         if key:
@@ -812,13 +909,13 @@ class GUI:
         main loop
         :return:
         """
-        tkinter.mainloop()
+        mainloop()
 
     def changeseries_fn(self):
         key = self.series_dropdown.get()
-        name = tkinter.simpledialog.askstring('Series Name',
-                                              'enter series name',
-                                              initialvalue=key)
+        name = simpledialog.askstring('Series Name',
+                                      'enter series name',
+                                      initialvalue=key)
         if name:
             self.series[name] = self.series[key]
             self.series.__delitem__(key)
@@ -826,25 +923,25 @@ class GUI:
             self.series_dropdown.set(name)
 
     def xlabel_fn(self):
-        name = tkinter.simpledialog.askstring('X',
-                                              'enter x axis label',
-                                              initialvalue=self.xlabel)
+        name = simpledialog.askstring('X',
+                                      'enter x axis label',
+                                      initialvalue=self.xlabel)
         if name:
             self.xlabel = name
             self.xlabel_var.set(f'X Label {self.xlabel}')
 
     def ylabel_fn(self):
-        name = tkinter.simpledialog.askstring('Y',
-                                              'enter y axis label',
-                                              initialvalue=self.ylabel)
+        name = simpledialog.askstring('Y',
+                                      'enter y axis label',
+                                      initialvalue=self.ylabel)
         if name:
             self.ylabel = name
             self.ylabel_var.set(f'Y Label {self.ylabel}')
 
     def title_fn(self):
-        name = tkinter.simpledialog.askstring('TITLE',
-                                              'enter graph title',
-                                              initialvalue=self.title)
+        name = simpledialog.askstring('TITLE',
+                                      'enter graph title',
+                                      initialvalue=self.title)
         if name:
             self.title = name
             self.title_var.set(f'Title: {self.title}')
