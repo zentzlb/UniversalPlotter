@@ -1,9 +1,5 @@
-# from tkinter import Tk, filedialog, StringVar
-import math
 import os
 import time
-# import tkinter
-# import simpledialog
 from tkinter import (filedialog, simpledialog, commondialog, dialog, messagebox, colorchooser, Tk, Button,
                      Toplevel, Label, BooleanVar, StringVar, Scale, Event, mainloop)
 from tkinter import ttk as TTK
@@ -663,8 +659,8 @@ class GUI:
         ais2, ais3 = hic_ais(hic)
         messagebox.showinfo('HIC15', f'HIC15: {hic:0.1f}'
                                      f'\nHIC Time: {hic_t:0.3f}'
-                                     f'\nAIS2+ Risk: {100 * ais2:0.2f}%'
-                                     f'\nAIS2+ Risk: {100 * ais3:0.2f}%')
+                                     f'\nAIS2 Risk: {100 * ais2:0.2f}%'
+                                     f'\nAIS3+ Risk: {100 * ais3:0.2f}%')
 
     @catch
     def cmax_fn(self):

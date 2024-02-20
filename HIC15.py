@@ -21,30 +21,33 @@ def timed(fn):
 
 @timed
 @numba.njit
-def hic15(mytime: np.ndarray[float], ax: np.ndarray, ay: np.ndarray, az: np.ndarray) -> tuple[float, float]:
+def hic15(my_time: np.ndarray[float],
+          ax: np.ndarray,
+          ay: np.ndarray,
+          az: np.ndarray) -> tuple[float, float]:
     """
     find maximum HIC15 value
-    :param mytime: time in s
+    :param my_time: time in s
     :param ax: x acceleration in gs
     :param ay: y acceleration in gs
     :param az: z acceleration in gs
-    :return: HIC15
+    :return: HIC15 score
     """
 
     hic = 0
     hic_t = 0
     dt = 0.015
-    n = len(mytime)
+    n = len(my_time)
     acc = np.sqrt(np.square(ax) + np.square(ay) + np.square(az))
     vel = [0]
-    for a1, a2, t1, t2 in zip(acc[:-1], acc[1:], mytime[:-1], mytime[1:]):
+    for a1, a2, t1, t2 in zip(acc[:-1], acc[1:], my_time[:-1], my_time[1:]):
         vel.append(vel[-1] + 0.5 * (a2 + a1) * (t2 - t1))
 
     vel = np.array(vel)
-    for i, t0_v0 in enumerate(zip(mytime, vel)):
+    for i, t0_v0 in enumerate(zip(my_time, vel)):
         t0, v0 = t0_v0
         for j in range(i+1, n):
-            delta_t = mytime[j] - t0
+            delta_t = my_time[j] - t0
             if delta_t <= dt:
                 h = ((vel[j] - v0) ** 2.5) / delta_t ** 1.5
                 if h > hic:
@@ -58,13 +61,16 @@ def hic15(mytime: np.ndarray[float], ax: np.ndarray, ay: np.ndarray, az: np.ndar
 
 def hic_ais(hic: float) -> tuple[float, float]:
     """
-    calculate AIS2+ risk from HIC15 score
+    calculate AIS2+ risk from HIC15 score \n
+    source: Injury Criteria for the THOR 50th Male ATD
     :param hic: HIC15 score
-    :return: risk of injury
+    :return: AIS2, AIS3+ injury risk
     """
     p2 = (math.log(hic) - 6.96362) / 0.84687
     p3 = (math.log(hic) - 7.45231) / 0.73998
-    return norm.cdf(p2), norm.cdf(p3)
+    ais2 = norm.cdf(p2)
+    ais3 = norm.cdf(p3)
+    return min(ais2 - ais3, 0), ais3
 
 
 if __name__ == '__main__':

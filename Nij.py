@@ -18,10 +18,11 @@ import numpy as np
 
 def neck_AIS(nij: float, age: int = 45) -> tuple[float, float]:
     """
-
-    :param nij:
-    :param age:
-    :return:
+    calculates AIS2 and AIS3+ neck injury risk from Nij \n
+    source: Injury Criteria for the THOR 50th Male ATD
+    :param nij: Nij Score
+    :param age: surrogate age in years
+    :return: AIS2, AIS3+ injury risk
     """
     ais2 = 1 / (1 + exp(9.031 - 5.681 * nij - 0.0803 * age))
     ais3 = 1 / (1 + exp(7.447 - 5.440 * nij - 0.0350 * age))

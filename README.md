@@ -9,6 +9,7 @@
 > matplotlib
 
 ## Useful Terminal Commands
+> pip install -r .\requirements.txt \
 > git rm --cached "filename"
 
 ## Useful Links
