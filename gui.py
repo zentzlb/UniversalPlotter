@@ -694,20 +694,17 @@ class GUI:
         calculate femur injury risk
         :return:
         """
-        risk_r, force_r = femur_ais2(self.data['Femur Right Force X'],
-                                     self.data['Femur Right Force Y'],
-                                     self.data['Femur Right Force Z'])
+        # risk_r, force_r = femur_ais2(self.data['Femur Right Force X'],
+        #                              self.data['Femur Right Force Y'],
+        #                              self.data['Femur Right Force Z'])
 
         risk_l, force_l = femur_ais2(self.data['Femur Left Force X'],
                                      self.data['Femur Left Force Y'],
                                      self.data['Femur Left Force Z'])
 
         messagebox.showinfo('Femur Injury Risk',
-                            f'Right Femur\n'
-                            f'Force: {force_r:0.1f}\n'
-                            f'AIS2+ Risk: {100 * risk_r:0.2f}%\n'
-                            f'Right Femur\n'
-                            f'Force: {force_r:0.1f}\n'
+                            f'Left Femur\n'
+                            f'Force: {force_l:0.3f} kN\n'
                             f'AIS2+ Risk: {100 * risk_l:0.2f}%\n')
 
     def clear_fn(self):

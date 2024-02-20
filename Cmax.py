@@ -6,7 +6,7 @@ def chest_AIS3(cmax: float) -> float:
     calculates AIS3+ chest injury risk from chest deflection \n
     source: The Hybrid III Dummy as a Discriminator of Injurious
     and Non-Injurious Restraint Loading
-    :param cmax:
+    :param cmax: chest deflection (mm)
     :return: AIS3+ injury risk
     """
     a = -14.4135

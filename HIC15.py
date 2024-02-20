@@ -27,10 +27,10 @@ def hic15(my_time: np.ndarray[float],
           az: np.ndarray) -> tuple[float, float]:
     """
     find maximum HIC15 value
-    :param my_time: time in s
-    :param ax: x acceleration in gs
-    :param ay: y acceleration in gs
-    :param az: z acceleration in gs
+    :param my_time: time (s)
+    :param ax: x acceleration (g)
+    :param ay: y acceleration (g)
+    :param az: z acceleration (g)
     :return: HIC15 score
     """
 
