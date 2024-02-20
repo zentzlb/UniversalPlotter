@@ -1,3 +1,6 @@
 lasso-python
 numpy
 scipy
+matplotlib
+numba
+dask
