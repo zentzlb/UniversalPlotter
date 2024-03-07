@@ -14,7 +14,6 @@ from math import cos, sin, tan, acos, asin, atan, atan2, pi, e, inf, log
 import matplotlib.pyplot as plt
 
 from filters import CFC_filter
-from matplotlib import pyplot
 
 import pandas as pd
 import numpy as np
@@ -22,7 +21,7 @@ import dask
 import dask.dataframe as dd
 import dask.array as da
 
-from csv_tools import *
+from csv_tools import open_csv
 from binout_tools import get_binout, read_binout
 
 

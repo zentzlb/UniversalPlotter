@@ -7,6 +7,7 @@ from tkinter import ttk as TTK
 import numpy as np
 import pandas as pd
 from filters import CFC_filter
+from typing import Callable, Any
 
 
 class SimpleChoiceBox:
@@ -24,7 +25,7 @@ class SimpleChoiceBox:
         self.t.destroy()
 
 
-def catch(fn):
+def catch(fn: Callable):
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
         try:
@@ -43,7 +44,12 @@ def catch(fn):
     return wrapper
 
 
-def enumerator(fn):
+def enumerator(fn: Callable[[Any], str]) -> Callable[[Any], str]:
+    """
+    count number of string occurrences and adds enumeration
+    :param fn: string returning function
+    :return: string returning function with enumerator
+    """
     my_list = []
 
     @functools.wraps(fn)

@@ -1,16 +1,16 @@
 import numpy as np
-import scipy
+from scipy.signal import filtfilt
+import math
 
 
 def CFC(T: float, cfc: int) -> tuple[list[float, float, float], list[float, float, float]]:
     """
-    calculates
+    calculates CFC parameters \n
+    credit to: KEVIN KOPP
     :param T: frequency
     :param cfc: filter type
     :return: b and a constants
     """
-    import math
-    from scipy import signal
 
     pi = math.pi
 
@@ -38,4 +38,4 @@ def CFC_filter(T: float, data: np.ndarray, cfc: int) -> np.ndarray:
     :return: filtered data
     """
     b, a = CFC(T, cfc)
-    return scipy.signal.filtfilt(b, a, data)
+    return filtfilt(b, a, data)

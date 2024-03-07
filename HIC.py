@@ -6,9 +6,15 @@ import time
 import numba
 import random as rnd
 from scipy.stats import norm
+from typing import Callable
 
 
-def timed(fn):
+def timed(fn: Callable) -> Callable:
+    """
+    time function execution
+    :param fn: function
+    :return: timed function
+    """
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
         t1 = time.process_time()
@@ -134,14 +140,14 @@ def integrate(x, y):
 
 
 if __name__ == '__main__':
-    t = np.linspace(0, 10, 10001)
-    ax = np.array([100 * rnd.random() for i in range(10001)])
-    ay = np.array([100 * rnd.random() for i in range(10001)])
-    az = np.array([100 * rnd.random() for i in range(10001)])
+    Time = np.linspace(0, 10, 10001)
+    Ax = np.array([100 * rnd.random() for i in range(10001)])
+    Ay = np.array([100 * rnd.random() for i in range(10001)])
+    Az = np.array([100 * rnd.random() for i in range(10001)])
 
-    hic, hic_t = hic15(t, ax, ay, az)
+    hic, hic_t = hic15(Time, Ax, Ay, Az)
     print(hic, hic_t)
 
-    hic, hic_t = Hic15(t, ax, ay, az)
+    hic, hic_t = Hic15(Time, Ax, Ay, Az)
     print(hic, hic_t)
 
