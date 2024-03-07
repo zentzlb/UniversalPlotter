@@ -35,3 +35,4 @@ def chest_AIS3(cmax: float) -> float:
     q = a + sum([x[0] * x[1] for x in zip(B, x)])
 
     return 1 / (1 + math.exp(-q))
+
