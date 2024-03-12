@@ -33,6 +33,7 @@ class GUI:
     def __init__(self):
         self.root = Tk()
         self.root.title('CSV Plotter')
+        # self.root.iconbitmap()
         self.files = []  # set()
         self.filenames = {}
         self.text_rows = {}
