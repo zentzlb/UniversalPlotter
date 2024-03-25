@@ -21,7 +21,8 @@ import dask
 import dask.dataframe as dd
 import dask.array as da
 
-from csv_tools import open_csv
+#from csv_tools import open_csv
+from csv_tools_dask import open_csv
 from binout_tools import get_binout, read_binout
 
 
