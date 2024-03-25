@@ -1,4 +1,3 @@
-import dask as d
 import dask.dataframe as dd
 import dask.array as da
 import pandas as pd
@@ -21,7 +20,9 @@ def open_csv(path: str, dtype=np.float64) -> tuple[pd.DataFrame, np.ndarray]:
     print('reading columns')
     col = pd.read_csv(path, usecols=[0])
     print('listing headers')
+    # Determine header rows based on non-numeric values in the first column
     header_rows = {row[0] for row in enumerate(col.iloc[:, 0]) if type(row[1]) is str and not check_type(row[1])}
+    # If header rows are found, add one more row as the last header row
     if len(header_rows) > 0:
         header_rows.add(max(header_rows) + 1)
     print('opening main dataframe')
@@ -29,13 +30,13 @@ def open_csv(path: str, dtype=np.float64) -> tuple[pd.DataFrame, np.ndarray]:
     df.dropna(how='all', axis=1, inplace=True)
     df.info(verbose=False, memory_usage="deep")
     print('opening headers')
+    # Read the headers if they exist, otherwise use DataFrame columns as headers
     if len(header_rows) > 0:
         headers = pd.read_csv(path, skiprows=lambda x: x not in header_rows, dtype=str)
         headers.dropna(how='all', axis=1, inplace=True)
         headers.info(verbose=False, memory_usage="deep")
     else:
         headers = df.columns
-    # print('dropping unused columns')
 
     return df, headers.to_numpy()
 
@@ -64,10 +65,6 @@ def check_type(string: str) -> bool:
     except ValueError:
         return False
 
-
-
-# import time
-# t1 = time.time()
-# df, header = open_csv(r"C:\DTS\SLICEWare\1.08.0868\Data\CSV\Drop Test Series\Drop_4.csv", dtype=np.float32)
-# t2 = time.time()
-# print(t2-t1)
+# Usage example
+df, header = open_csv(r"C:\Users\ved.thakare\OneDrive - University of Virginia\Documents\CFC1000_Drop_33.csv", dtype=np.float32)
+# Perform further processing with the Dask DataFrame 'df' and the headers array 'header'
