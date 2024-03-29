@@ -3,13 +3,16 @@ import time
 from tkinter import (filedialog, simpledialog, commondialog, dialog, messagebox, colorchooser, Tk, Button,
                      Toplevel, Label, BooleanVar, StringVar, Scale, Event, mainloop)
 from tkinter import ttk as TTK
-from utils import catch, check_file, check_ext, trim_series, process_series, enumerator
+from utils import (catch, check_file, check_ext, trim_series, process_series, enumerator,
+                   trim_arrays, filter_arrays)
 from HIC15 import hic15, hic_ais
 from Cmax import chest_AIS3
 from Nij import neck_AIS
 from lasso.dyna import Binout
 from femur import femur_ais2
 from math import cos, sin, tan, acos, asin, atan, atan2, pi, e, inf, log
+from BrIC import bric, bric_mps_ais, bric_csdm_ais
+from damage3 import calc_damage, dmg_ais, deriv
 
 import matplotlib.pyplot as plt
 
@@ -253,57 +256,72 @@ class GUI:
                                    height=1)
         self.hic15_button.grid(row=0, column=2)
 
+        self.bric_button = Button(text="BrIC15",
+                                  command=lambda: self.bric_fn(),
+                                  width=25,
+                                  height=1)
+        self.bric_button.grid(row=1, column=2)
+
+        self.bric_button = Button(text="DAMAGE",
+                                  command=lambda: self.damage_fn(),
+                                  width=25,
+                                  height=1)
+        self.bric_button.grid(row=2, column=2)
+
         self.nij_button = Button(text="Nij",
                                  command=lambda: self.nij_fn(),
                                  width=25,
                                  height=1)
-        self.nij_button.grid(row=1, column=2)
+        self.nij_button.grid(row=3, column=2)
 
         self.cmax_button = Button(text="Cmax",
                                   command=lambda: self.cmax_fn(),
                                   width=25,
                                   height=1)
-        self.cmax_button.grid(row=2, column=2)
+        self.cmax_button.grid(row=4, column=2)
 
         self.cmax_button = Button(text="Femur",
                                   command=lambda: self.femur_fn(),
                                   width=25,
                                   height=1)
-        self.cmax_button.grid(row=3, column=2)
+        self.cmax_button.grid(row=5, column=2)
 
         self.resultant_button = Button(text="Calculate Resultant",
                                        command=lambda: self.resultant_popup(),
                                        width=25,
                                        height=1)
-        self.resultant_button.grid(row=4, column=2)
-        # self.resultant_popup()
-
-        # self.shift_time_var1 = StringVar(value=f'Select Starting Time ({self.cfc if self.cfc != 0 else "no start time selected"})')
-        # self.shift_time_button1 = Button(textvariable=self.shift_time_var1, command= lambda: self.)
+        self.resultant_button.grid(row=6, column=2)
 
     @catch
     def resultant_popup(self):
         if self.xaxis_dropdown.get():
+            cfc = simpledialog.askinteger('set CFC filter',
+                                          f'enter CFC filter type (0 is unfiltered)\n',
+                                          minvalue=0,
+                                          maxvalue=1000,
+                                          initialvalue=self.cfc)
+
             def select_all():
                 keys = [k for k in checkboxes if checkboxes[k]['bool'].get()]
                 xkey = self.xaxis_dropdown.get()
                 array = np.zeros_like(self.data[xkey])
                 for key in keys:
                     array += self.data[key].to_numpy() ** 2
-                if self.cfc != 0:
-                    ydata = CFC_filter(1 / 10000, np.sqrt(array), self.cfc)
+                if cfc != 0:
+                    ydata = CFC_filter(1 / 10000, np.sqrt(array), cfc)
                 else:
                     ydata = np.sqrt(array)
                 ser = pd.Series(ydata)
 
                 self.series['resultant'] = {'xdata': self.data[xkey],
                                             'ydata': ser,
-                                            'cfc': str(self.cfc),
+                                            'cfc': str(cfc),
                                             'xscale': 1,
                                             'yscale': 1,
                                             'xoffset': 0,
                                             'yoffset': 0,
-                                            'trim': (self.data[xkey].min(), self.data[xkey].max()),
+                                            'trim': (max(self.data[xkey].min(), self.trim[0]),
+                                                     min(self.data[xkey].max(), self.trim[1])),
                                             'color': '#000000',
                                             'style': '-',
                                             'marker': 'None',
@@ -651,16 +669,94 @@ class GUI:
         calculate HIC15 AIS2+ injury risk
         :return:
         """
-        hic, hic_t = hic15(self.data['Display Name'].to_numpy(),
-                           self.data['Head Acceleration X'].to_numpy(),
-                           self.data['Head Acceleration Y'].to_numpy(),
-                           self.data['Head Acceleration Z'].to_numpy())
+
+        t = self.data['Display Name'].to_numpy()
+        x_acc = self.data['Head Acceleration X'].to_numpy()
+        y_acc = self.data['Head Acceleration Y'].to_numpy()
+        z_acc = self.data['Head Acceleration Z'].to_numpy()
+
+        t, x_acc, y_acc, z_acc = trim_arrays(x_acc, y_acc, z_acc, xdata=t, lim=self.trim)
+        x_acc, y_acc, z_acc = filter_arrays(x_acc, y_acc, z_acc, cfc=1000)
+
+        hic, hic_t = hic15(t, x_acc, y_acc, z_acc)
+
+        # print(f"filtered: {hic}")
+
+        # hic, hic_t = hic15(self.data['Display Name'].to_numpy(),
+        #                    self.data['Head Acceleration X'].to_numpy(),
+        #                    self.data['Head Acceleration Y'].to_numpy(),
+        #                    self.data['Head Acceleration Z'].to_numpy())
+        #
+        # print(f"unfiltered: {hic}")
 
         ais2, ais3 = hic_ais(hic)
         messagebox.showinfo('HIC15', f'HIC15: {hic:0.1f}'
                                      f'\nHIC Time: {hic_t:0.3f}'
-                                     f'\nAIS2 Risk: {100 * ais2:0.2f}%'
-                                     f'\nAIS3+ Risk: {100 * ais3:0.2f}%')
+                                     f'\nAIS 2 Risk: {100 * ais2:0.2f}%'
+                                     f'\nAIS 3+ Risk: {100 * ais3:0.2f}%')
+
+    @catch
+    def bric_fn(self):
+        """
+        calculate HIC15 AIS2+ injury risk
+        :return:
+        """
+        dtr = pi / 180
+        t = self.data['Display Name'].to_numpy()
+        wx = self.data['Head Angular Velocity X'].to_numpy() * dtr
+        wy = self.data['Head Angular Velocity Y'].to_numpy() * dtr
+        wz = self.data['Head Angular Velocity Z'].to_numpy() * dtr
+
+        t, wx, wy, wz = trim_arrays(wx, wy, wz, xdata=t, lim=self.trim)
+        wx, wy, wz = filter_arrays(wx, wy, wz, cfc=1000)
+
+        bric_score = bric(wx, wy, wz)
+
+        # bric_score = bric(self.data['Head Angular Velocity X'].to_numpy() * dtr,
+        #                   self.data['Head Angular Velocity Y'].to_numpy() * dtr,
+        #                   self.data['Head Angular Velocity Z'].to_numpy() * dtr)
+
+        # csdm_ais1, csdm_ais2, csdm_ais3, csdm_ais4, csdm_ais5p = bric_csdm_ais(bric_score)
+        mps_ais1p, mps_ais2p, mps_ais3p, mps_ais4p, mps_ais5p = bric_mps_ais(bric_score)
+
+        messagebox.showinfo('BrIC', f'BrIC: {bric_score: 0.3f}'
+                                    f'\n'
+                                    f'\n MPS'
+                                    f'\n AIS 1+ Risk: {100 * mps_ais1p:0.2f}%'
+                                    f'\n AIS 2+ Risk: {100 * mps_ais2p:0.2f}%'
+                                    f'\n AIS 3+ Risk: {100 * mps_ais3p:0.2f}%'
+                                    f'\n AIS 4+ Risk: {100 * mps_ais4p:0.2f}%'
+                                    f'\n AIS 5+ Risk: {100 * mps_ais5p:0.2f}%'
+                            )
+
+    @catch
+    def damage_fn(self):
+        """
+        calculate HIC15 AIS2+ injury risk
+        :return:
+        """
+        dtr = pi / 180
+        t = self.data['Display Name'].to_numpy()
+        wx = self.data['Head Angular Velocity X'].to_numpy() * dtr
+        wy = self.data['Head Angular Velocity Y'].to_numpy() * dtr
+        wz = self.data['Head Angular Velocity Z'].to_numpy() * dtr
+
+        t, wx, wy, wz = trim_arrays(wx, wy, wz, xdata=t, lim=self.trim)
+        wx, wy, wz = filter_arrays(wx, wy, wz, cfc=1000)
+
+        ax = deriv(wx, t)
+        ay = deriv(wy, t)
+        az = deriv(wz, t)
+
+        dmg_score = calc_damage(ax, ay, az, t[1:])
+        ais1, ais2, ais4 = dmg_ais(dmg_score)
+
+        messagebox.showinfo('Damage', f'BrIC: {dmg_score: 0.3f}'
+                                      f'\n'
+                                      f'\n AIS 1+ Risk: {100 * ais1:0.2f}%'
+                                      f'\n AIS 2+ Risk: {100 * ais2:0.2f}%'
+                                      f'\n AIS 4+ Risk: {100 * ais4:0.2f}%'
+                            )
 
     @catch
     def cmax_fn(self):
@@ -668,7 +764,12 @@ class GUI:
         calculate chest AIS3+ injury risk based on Cmax
         :return:
         """
-        cmax = self.data['DS_78051-317_EY5223'].to_numpy().__abs__().max()
+        t = self.data['Display Name'].to_numpy()
+        c = self.data['DS_78051-317_EY5223'].to_numpy()
+        t, c = trim_arrays(c, xdata=t, lim=self.trim)
+        c: np.ndarray = CFC_filter(1 / 10000, c, cfc=180)
+        # cmax = self.data['DS_78051-317_EY5223'].to_numpy().__abs__().max()
+        cmax = c.__abs__().max()
         ais3 = chest_AIS3(cmax)
         messagebox.showinfo('Cmax', f'Cmax: {cmax:0.1f}'
                                     f'\nAIS3+ Risk: {100 * ais3:0.2f}%')
@@ -679,14 +780,45 @@ class GUI:
         calculate neck injury risk based on Nij
         :return:
         """
+        t = self.data['Display Name'].to_numpy()
+        fz = self.data['Neck Upper Force Z'].to_numpy()
+        my = self.data['Neck Upper Moment Y'].to_numpy()
+
+        t, fz, my = trim_arrays(fz, my, xdata=t, lim=self.trim)
+        fz = CFC_filter(1 / 10000, fz, 1000)
+        my = CFC_filter(1 / 10000, my, 600)
+
         my_fn = lambda x: x / 310 if x > 0 else -x / 125
-        fz_norm = abs(self.data['Neck Upper Force Z'].to_numpy() / 4500)
-        my_norm = np.array([my_fn(my) for my in self.data['Neck Upper Moment Y'].to_numpy()])
-        nij = max(fz_norm + my_norm)
-        ais2, ais3 = neck_AIS(nij)
-        messagebox.showinfo('Nij', f'Nij: {nij:0.2f}\n'
+        fz_norm = (fz / 4500).__abs__()
+        my_norm = np.array([my_fn(m) for m in my])
+        # fz_norm = abs(self.data['Neck Upper Force Z'].to_numpy() / 4500)
+        # my_norm = np.array([my_fn(my) for my in self.data['Neck Upper Moment Y'].to_numpy()])
+        nij = fz_norm + my_norm
+        nij_max = max(nij)
+
+        plt.figure(1)
+
+        plt.plot(t,
+                 fz_norm,
+                 color='#ffab0f')  # (255, 171, 15)
+        plt.plot(t,
+                 my_norm,
+                 color='#cd0532')
+        plt.plot(t,
+                 nij,
+                 color='#0080ff')
+
+        plt.xlabel('Time (s)')
+        plt.ylabel('Nij score')
+        plt.legend(['Force Z', 'Moment Y', 'Nij'])
+        plt.title('Nij Components')
+        plt.show()
+
+        ais2, ais3, ais3_old = neck_AIS(nij_max)
+        messagebox.showinfo('Nij', f'Nij: {nij_max:0.2f}\n'
                                    f'AIS2 Risk: {100 * ais2:0.2f}%\n'
-                                   f'AIS3+ Risk: {100 * ais3:0.2f}%\n')
+                                   f'AIS3+ Risk: {100 * ais3:0.2f}%\n'
+                                   f'OLD AIS3+ Risk: {100 * ais3_old:0.2f}%\n')
 
     @catch
     def femur_fn(self):
@@ -698,9 +830,18 @@ class GUI:
         #                              self.data['Femur Right Force Y'],
         #                              self.data['Femur Right Force Z'])
 
-        risk_l, force_l = femur_ais2(self.data['Femur Left Force X'],
-                                     self.data['Femur Left Force Y'],
-                                     self.data['Femur Left Force Z'])
+        t = self.data['Display Name'].to_numpy()
+        # fx = self.data['Femur Left Force X'].to_numpy()
+        # fy = self.data['Femur Left Force Y'].to_numpy()
+        fz = self.data['Femur Left Force Z'].to_numpy()
+
+        t, fz = trim_arrays(fz, xdata=t, lim=self.trim)
+        fz = CFC_filter(1 / 10000, fz, cfc=600)
+
+        risk_l, force_l = femur_ais2(fz)
+        # risk_l, force_l = femur_ais2(self.data['Femur Left Force X'],
+        #                              self.data['Femur Left Force Y'],
+        #                              self.data['Femur Left Force Z'])
 
         messagebox.showinfo('Femur Injury Risk',
                             f'Left Femur\n'
@@ -757,6 +898,11 @@ class GUI:
         :return:
         """
         series = self.series_dropdown.get()
+        if series and type(self.series[series]["cfc"]) is str:
+            messagebox.showerror("FILTERING ERROR",
+                                 "data has already been filtered and combined")
+            return
+
         cfc = simpledialog.askinteger('CFC filtering',
                                       f'enter CFC filter type (0 is unfiltered)\n'
                                       f'{"series filter: " + str(self.series[series]["cfc"]) if series else ""}\n'

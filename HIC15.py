@@ -21,7 +21,7 @@ def timed(fn):
 
 @timed
 @numba.njit
-def hic15(my_time: np.ndarray[float],
+def hic15(my_time: np.ndarray,
           ax: np.ndarray,
           ay: np.ndarray,
           az: np.ndarray) -> tuple[float, float]:

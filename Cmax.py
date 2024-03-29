@@ -25,7 +25,7 @@ def chest_AIS3(cmax: float) -> float:
         1,  # male
         77.7,  # mass (kg)
         45,  # age
-        40.2336,  # sled speed (km/hr) 51.5
+        56.327,  # sled speed (km/hr) 51.5
         0,  # is driver
         1,  # airbag loading
         0,  # combined loading
@@ -36,3 +36,6 @@ def chest_AIS3(cmax: float) -> float:
 
     return 1 / (1 + math.exp(-q))
 
+
+if __name__ == '__main__':
+    print(chest_AIS3(24.1))

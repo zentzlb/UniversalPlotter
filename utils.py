@@ -6,8 +6,11 @@ from tkinter import ttk as TTK
 
 import numpy as np
 import pandas as pd
+from numpy import ndarray
+
 from filters import CFC_filter
-from typing import Callable, Any
+from typing import Callable, Any, Tuple
+from math import inf
 
 
 class SimpleChoiceBox:
@@ -113,3 +116,47 @@ def process_series(dic: dict) -> tuple[np.ndarray, np.ndarray]:
     xdata = xseries.to_numpy() * dic['xscale'] + dic['xoffset']
     ydata = ydata * dic['yscale'] + dic['yoffset']
     return xdata, ydata
+
+
+def trim_arrays(*args: np.ndarray, xdata: np.ndarray = np.array([]), lim: tuple[float, float] = (-inf, inf)) \
+        -> tuple:
+    """
+    trims x and y data to specified x values
+    :param xdata: x data
+    :param ydata: y data
+    :param lim: x data limits
+    :return: trimmed x and y data
+    """
+    index = np.where((xdata >= lim[0]) & (xdata <= lim[1]))[0]
+    trimmed = [arg[index[0]:index[-1] + 1] for arg in args]
+
+    return xdata[index[0]:index[-1] + 1], *trimmed
+
+
+def filter_arrays(*args: np.ndarray, T: float = 1 / 10000, cfc: int = 1000) \
+        -> list[ndarray]:
+    """
+
+    :param args: arrays to filter
+    :param T: frequency
+    :param cfc: filter type
+    :return: filtered arrays
+    """
+    filtered = [CFC_filter(T, arg, cfc) for arg in args]
+
+    return filtered
+
+
+if __name__ == '__main__':
+    import random as rnd
+    n = 1001
+    X = np.linspace(-10, 10, n)
+    Y2 = np.array([rnd.random() for i in range(n)])
+    Y1 = np.linspace(-100, 100, n)
+
+    Xt, Y1t, Y2t = trim_arrays(Y1, Y2, xdata=X, lim=(-1, 1))
+
+    print(Xt)
+    print(Y1t)
+    print(Y2t)
+

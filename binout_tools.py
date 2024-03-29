@@ -40,7 +40,7 @@ def read_binout(binout: Binout, keys: tuple[str, str, str]) -> tuple:
 
 
 if __name__ == '__main__':
-    path = (r"C:\Users\Logan.Zentz"
+    PATH = (r"C:\Users\Logan.Zentz"
             r"\OneDrive - University of Virginia\Documents"
             r"\Drop_Tests\sims\airbag\final\3inch vent\12ft\ea 0.1"
             r"\drop_vent_d3.0_start1000_term2000_height12_blow_v14000_blow_s300_ea0.1_sim\binout0000")

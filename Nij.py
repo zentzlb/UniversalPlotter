@@ -16,7 +16,7 @@ import numpy as np
 #     return ais2 - ais3, ais3 - ais4, ais4 - ais5, ais5
 
 
-def neck_AIS(nij: float, age: int = 45) -> tuple[float, float]:
+def neck_AIS(nij: float, age: int = 45) -> tuple[float, float, float]:
     """
     calculates AIS2 and AIS3+ neck injury risk from Nij \n
     source: Injury Criteria for the THOR 50th Male ATD
@@ -26,5 +26,11 @@ def neck_AIS(nij: float, age: int = 45) -> tuple[float, float]:
     """
     ais2 = 1 / (1 + exp(9.031 - 5.681 * nij - 0.0803 * age))
     ais3 = 1 / (1 + exp(7.447 - 5.440 * nij - 0.0350 * age))
+    ais3old = 1 / (1 + exp(3.227 - 1.969 * nij))
 
-    return min(ais2 - ais3, 0), ais3
+    return min(ais2 - ais3, 0), ais3, ais3old
+
+
+if __name__ == '__main__':
+    print(neck_AIS(4/4.5, 45))
+
