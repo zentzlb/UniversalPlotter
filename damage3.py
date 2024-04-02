@@ -4,7 +4,6 @@
 # Fixed By: Logan Zentz, UVA
 
 import numpy as np
-from scipy.interpolate import interp1d
 from scipy.integrate import odeint
 import functools
 from numba import jit, njit, int_, float_, int32, float64, float32
@@ -30,14 +29,14 @@ def timed(fn: Callable) -> Callable:
     return wrapper
 
 
-def deriv(y: np.ndarray, t: np.ndarray) -> np.ndarray:
+def dy_dt(y: np.ndarray, t: np.ndarray) -> np.ndarray:
     """
     calculate derivative of data
     :param y: data array
     :param t: time array
     :return: derivative
     """
-    return np.array([(v2 - v1) / (t2 - t1) for v1, v2, t1, t2 in zip(y[:-1], y[1:], t[:-1], t[1:])])
+    return np.array([(y2 - y1) / (t2 - t1) for y1, y2, t1, t2 in zip(y[:-1], y[1:], t[:-1], t[1:])])
 
 
 def mass_matrix(mx: float, my: float, mz: float) -> np.ndarray:
@@ -148,9 +147,6 @@ def equation_of_motion(y: np.ndarray,
     a = np.array([np.interp(t, time_, aax), np.interp(t, time_, aay), np.interp(t, time_, aaz)],
                  dtype=np.float64)
 
-    # d1 = np.dot(mass, a)
-    # d2 = np.dot(damping, d_delta)
-    # d3 = np.dot(stiffness, delta)
     dd_delta = np.dot(mass_inv, np.dot(mass, a) - (np.dot(damping, d_delta) + np.dot(stiffness, delta)))
     return np.array([d_delta_x, d_delta_y, d_delta_z, dd_delta[0], dd_delta[1], dd_delta[2]])
 
@@ -186,7 +182,7 @@ def calc_damage(aax: np.ndarray, aay: np.ndarray, aaz: np.ndarray, time_: np.nda
 
 def dmg_ais(damage: float) -> tuple[float, float, float]:
     """
-    This function calculates the Risk curve for damage
+    This function calculates the Risk curve for damage injury criteria
     :param damage: damage value
     :return: [P(AIS1+), P(AIS2+), P(AIS4+)]
     """
@@ -206,9 +202,9 @@ if __name__ == '__main__':
         Wx = np.array([50 * math.sin(i / 100) for i in range(n)])
         Wy = np.array([50 * math.sin(i / 70) for i in range(n)])
         Wz = np.array([50 * math.sin(i / 120) for i in range(n)])
-        Ax = deriv(Wx, T)
-        Ay = deriv(Wy, T)
-        Az = deriv(Wz, T)
+        Ax = dy_dt(Wx, T)
+        Ay = dy_dt(Wy, T)
+        Az = dy_dt(Wz, T)
         print(dmg := calc_damage(Ax, Ay, Az, T[1:]))
         print(dmg := calc_damage(Ax, Ay, Az, T[1:]))
         print(dmg_ais(dmg))

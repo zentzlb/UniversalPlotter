@@ -12,7 +12,7 @@ from lasso.dyna import Binout
 from femur import femur_ais2
 from math import cos, sin, tan, acos, asin, atan, atan2, pi, e, inf, log
 from BrIC import bric, bric_mps_ais, bric_csdm_ais
-from damage3 import calc_damage, dmg_ais, deriv
+from damage3 import calc_damage, dmg_ais, dy_dt
 
 import matplotlib.pyplot as plt
 
@@ -744,9 +744,9 @@ class GUI:
         t, wx, wy, wz = trim_arrays(wx, wy, wz, xdata=t, lim=self.trim)
         wx, wy, wz = filter_arrays(wx, wy, wz, cfc=1000)
 
-        ax = deriv(wx, t)
-        ay = deriv(wy, t)
-        az = deriv(wz, t)
+        ax = dy_dt(wx, t)
+        ay = dy_dt(wy, t)
+        az = dy_dt(wz, t)
 
         dmg_score = calc_damage(ax, ay, az, t[1:])
         ais1, ais2, ais4 = dmg_ais(dmg_score)

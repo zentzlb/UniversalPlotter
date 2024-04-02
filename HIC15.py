@@ -2,25 +2,32 @@ import functools
 import numpy as np
 import math
 import time
-import numba
+from numba import njit, float64
+from numba.core.types import UniTuple
 import random as rnd
 from scipy.stats import norm
-import itertools
+from typing import Callable
 
 
-def timed(fn):
+def timed(fn: Callable) -> Callable:
+    """
+    adds runtime counter
+    :param fn: function
+    :return: timed function
+    """
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
         t1 = time.time()
         a = fn(*args, **kwargs)
         t2 = time.time()
-        print(f"function run time: {t2-t1}s")
+        print(f"{fn.__name__} run time: {t2 - t1}s")
         return a
+
     return wrapper
 
 
 @timed
-@numba.njit
+@njit(UniTuple(float64, 2)(float64[::1], float64[::1], float64[::1], float64[::1]))
 def hic15(my_time: np.ndarray,
           ax: np.ndarray,
           ay: np.ndarray,
@@ -79,6 +86,7 @@ if __name__ == '__main__':
     Ay = np.array([100 * rnd.random() for i in range(len(t))])
     Az = np.array([100 * rnd.random() for i in range(len(t))])
 
+    hic15(t, Ax, Ay, Az)
     Hic, Hic_t = hic15(t, Ax, Ay, Az)
     print(Hic, Hic_t)
 
