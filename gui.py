@@ -144,9 +144,26 @@ class GUI:
         self.series_label = Label(master=self.root, textvariable=self.series_var)
         self.series_label.grid(row=14, column=0)
 
+        self.array_var = StringVar(value='array selection')
+        self.array_label = Label(master=self.root, textvariable=self.array_var)
+        self.array_label.grid(row=19, column=0)
+        self.array_label.grid_remove()
         ##############
         #  COLUMN 1  #
         ##############
+
+        self.array_mode = BooleanVar(value=False)
+        self.array_checkbox = TTK.Checkbutton(text="Array Mode", variable=self.array_mode,
+                                              command=self.toggle_array_mode)
+        self.array_checkbox.grid(row=9, column=0)
+        self.array_dropdown = TTK.Combobox(state='readonly',
+                                           values=[],
+                                           width=27,
+                                           height=10)
+        self.array_dropdown.bind("<<ComboboxSelected>>", self.array_fn)
+        self.array_dropdown.grid(row=10, column=1, columnspan=1)
+        self.array_dropdown.grid_remove()
+
 
         self.browse_button = Button(text="Browse Files",
                                     command=lambda: self.browse_fn(),
@@ -295,7 +312,32 @@ class GUI:
 
         self.folder_path = ""
         self.function_buttons = []
-
+    def array_fn(self, event):
+        pass
+    def toggle_array_mode(self):
+        if self.array_mode.get():
+            self.array_label.grid(row=10, column=0)
+            self.file_label.grid_remove()
+            self.column_label.grid_remove()
+            self.xaxis_label.grid_remove()
+            self.yaxis_label.grid_remove()
+            self.array_label.grid()
+            self.file_dropdown.grid_remove()
+            self.header_dropdown.grid_remove()
+            self.xaxis_dropdown.grid_remove()
+            self.yaxis_dropdown.grid_remove()
+            self.array_dropdown.grid()
+        else:
+            self.array_label.grid(row=19, column=0)
+            self.file_label.grid()
+            self.column_label.grid()
+            self.xaxis_label.grid()
+            self.yaxis_label.grid()
+            self.file_dropdown.grid()
+            self.header_dropdown.grid()
+            self.xaxis_dropdown.grid()
+            self.yaxis_dropdown.grid()
+            self.array_dropdown.grid_remove()
     def select_folder(self):
         folder_path = filedialog.askdirectory()
         if folder_path:
@@ -622,6 +664,8 @@ class GUI:
             self.column_var.set("data selection")
             self.xaxis_var.set("y axis selection")
             self.yaxis_var.set("id selection")
+        # Update array dropdown menu
+        self.array_dropdown['values'] = list(self.data.columns)
 
     # def
     @catch
@@ -630,15 +674,23 @@ class GUI:
         add data to saved series
         :return:
         """
-        if self.ext == '.csv':
-            self.addcsv_fn()
-            self.series_dropdown['values'] = list(self.series.keys())
-            self.series_dropdown.set(self.yaxis_dropdown.get())
+        if self.array_mode.get():
+            array_name = self.array_dropdown.get()
+            if array_name:
+                array_data = self.data[array_name].to_numpy()
+                self.series[f"{array_name}_array"] = array_data
+                self.series_dropdown['values'] = list(self.series.keys())
+                self.series_dropdown.set(f"{array_name}_array")
         else:
-            self.addbinout_fn()
-            self.series_dropdown['values'] = list(self.series.keys())
-            self.series_dropdown.set(f"{self.xaxis_dropdown.get()} {self.yaxis_dropdown.get()}")
-        self.series_fn(None)
+            if self.ext == '.csv':
+                self.addcsv_fn()
+                self.series_dropdown['values'] = list(self.series.keys())
+                self.series_dropdown.set(self.yaxis_dropdown.get())
+            else:
+                self.addbinout_fn()
+                self.series_dropdown['values'] = list(self.series.keys())
+                self.series_dropdown.set(f"{self.xaxis_dropdown.get()} {self.yaxis_dropdown.get()}")
+            self.series_fn(None)
 
     def addcsv_fn(self):
         """
