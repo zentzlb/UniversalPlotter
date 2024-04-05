@@ -1,8 +1,10 @@
 import os
 import time
+import inspect
 from tkinter import (filedialog, simpledialog, commondialog, dialog, messagebox, colorchooser, Tk, Button,
                      Toplevel, Label, BooleanVar, StringVar, Scale, Event, mainloop)
 from tkinter import ttk as TTK
+import importlib.util
 from utils import catch, check_file, check_ext, trim_series, process_series, enumerator
 from HIC15 import hic15, hic_ais
 from Cmax import chest_AIS3
@@ -21,8 +23,8 @@ import dask
 import dask.dataframe as dd
 import dask.array as da
 
-#from csv_tools import open_csv
-from csv_tools_dask import open_csv
+from csv_tools import open_csv
+#from csv_tools_dask import open_csv
 from binout_tools import get_binout, read_binout
 
 
@@ -248,6 +250,8 @@ class GUI:
         #  COLUMN 2  #
         ##############
 
+
+
         self.hic15_button = Button(text="HIC15",
                                    command=lambda: self.hic15_fn(),
                                    width=25,
@@ -281,6 +285,106 @@ class GUI:
 
         # self.shift_time_var1 = StringVar(value=f'Select Starting Time ({self.cfc if self.cfc != 0 else "no start time selected"})')
         # self.shift_time_button1 = Button(textvariable=self.shift_time_var1, command= lambda: self.)
+
+        self.folder_var = StringVar(value="Select Folder")
+        self.folder_button = Button(textvariable=self.folder_var,
+                                    command=lambda: self.select_folder(),
+                                    width=25,
+                                    height=1)
+        self.folder_button.grid(row=0, column=2)
+
+        self.folder_path = ""
+        self.function_buttons = []
+
+    def select_folder(self):
+        folder_path = filedialog.askdirectory()
+        if folder_path:
+            self.folder_path = folder_path
+            self.update_function_buttons(folder_path)
+
+    def update_function_buttons(self, folder_path):
+        # Discover Python functions in the selected folder
+        functions = self.discover_functions(folder_path)
+
+        # Create buttons for each discovered function that ends with "X"
+        for func_name in functions:
+            if func_name.endswith("X"):
+                # Remove the trailing "X" from the button text
+                button_text = func_name[:-1]
+                if button_text not in [button.cget("text") for button in self.function_buttons]:
+                    button = Button(text=button_text,
+                                    command=lambda f=func_name: self.function_popup(f),
+                                    width=25,
+                                    height=1)
+                    button.grid(row=len(self.function_buttons) + 4 + 1, column=2)#change this so that it accounts for the last botton on row
+                    self.function_buttons.append(button)
+
+    def discover_functions(self, folder_path):
+        functions = []
+        for file_name in os.listdir(folder_path):
+            if file_name.endswith(".py"):
+                file_path = os.path.join(folder_path, file_name)
+                spec = importlib.util.spec_from_file_location(file_name[:-3], file_path)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                functions.extend(
+                    [func for func in dir(module) if callable(getattr(module, func)) and not func.startswith("__")])
+        return functions
+
+    def function_popup(self, func_name):
+        popup = Toplevel(self.root)
+        popup.title(func_name)
+
+        # Get the function object from the imported module
+        func = None
+        for file_name in os.listdir(self.folder_path):
+            if file_name.endswith(".py"):
+                file_path = os.path.join(self.folder_path, file_name)
+                spec = importlib.util.spec_from_file_location(file_name[:-3], file_path)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                if hasattr(module, func_name):
+                    func = getattr(module, func_name)
+                    break
+
+        if func is None:
+            print(f"Function {func_name} not found.")
+            return
+
+        # Get the parameter names and default values of the function
+        params = inspect.signature(func).parameters
+        param_names = list(params.keys())
+        param_defaults = [param.default if param.default != inspect.Parameter.empty else None for param in
+                          params.values()]
+
+        # Create labels and dropdown menus for each parameter
+        param_vars = []
+        for i, (param_name, param_default) in enumerate(zip(param_names, param_defaults)):
+            param_label = Label(popup, text=f"{param_name}:")
+            param_label.grid(row=i, column=0)
+
+            param_var = StringVar(popup)
+            param_var.set(param_default)
+            param_dropdown = TTK.Combobox(popup, textvariable=param_var, values=list(self.series.keys()))
+            param_dropdown.grid(row=i, column=1)
+
+            param_vars.append(param_var)
+
+        def ok_button_click():
+            # Get the selected series for each parameter
+            param_series = [var.get() for var in param_vars]
+
+            # Call the function with the selected series as arguments
+            func_args = [self.series[series] for series in param_series]
+            result = func(*func_args)
+
+            # Display the result or perform further actions
+            print(f"Result of {func_name}: {result}")
+
+            popup.destroy()
+
+        ok_button = Button(popup, text="OK", command=ok_button_click)
+        ok_button.grid(row=len(param_names), column=0, columnspan=2)
 
     @catch
     def resultant_popup(self):
