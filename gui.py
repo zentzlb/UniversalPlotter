@@ -156,13 +156,7 @@ class GUI:
         self.array_checkbox = TTK.Checkbutton(text="Array Mode", variable=self.array_mode,
                                               command=self.toggle_array_mode)
         self.array_checkbox.grid(row=9, column=0)
-        self.array_dropdown = TTK.Combobox(state='readonly',
-                                           values=[],
-                                           width=27,
-                                           height=10)
-        self.array_dropdown.bind("<<ComboboxSelected>>", self.array_fn)
-        self.array_dropdown.grid(row=10, column=1, columnspan=1)
-        self.array_dropdown.grid_remove()
+
 
 
         self.browse_button = Button(text="Browse Files",
@@ -241,6 +235,12 @@ class GUI:
                                             height=10)
         self.header_dropdown.bind("<<ComboboxSelected>>", self.header_fn)
         self.header_dropdown.grid(row=11, column=1, columnspan=1)
+        self.array_dropdown = TTK.Combobox(state='readonly',
+                                           values=[],
+                                           width=27,
+                                           height=10)
+        self.array_dropdown.bind("<<ComboboxSelected>>", self.array_fn)
+        self.array_dropdown.grid(row=15, column=1, columnspan=1)
 
         self.xaxis_dropdown = TTK.Combobox(state='readonly',
                                            values=[],
@@ -262,6 +262,8 @@ class GUI:
                                             height=10)
         self.series_dropdown.bind("<<ComboboxSelected>>", self.series_fn)
         self.series_dropdown.grid(row=14, column=1, columnspan=1)
+
+
 
         ##############
         #  COLUMN 2  #
@@ -316,22 +318,21 @@ class GUI:
         pass
     def toggle_array_mode(self):
         if self.array_mode.get():
-            self.array_label.grid(row=10, column=0)
-            self.file_label.grid_remove()
-            self.column_label.grid_remove()
+            self.array_label.grid(row=14, column=0)
+            self.series_label.grid(row=15,column=0)
+            self.array_dropdown.grid(row=14, column=1)
+            self.series_dropdown.grid(row=15,column=1)
             self.xaxis_label.grid_remove()
             self.yaxis_label.grid_remove()
-            self.array_label.grid()
-            self.file_dropdown.grid_remove()
-            self.header_dropdown.grid_remove()
             self.xaxis_dropdown.grid_remove()
             self.yaxis_dropdown.grid_remove()
-            self.array_dropdown.grid()
         else:
+            self.series_label.grid(row=14, column=0)
             self.array_label.grid(row=19, column=0)
-            self.file_label.grid()
-            self.column_label.grid()
+            self.array_dropdown.grid(row=19, column=1)
+            self.series_dropdown.grid(row=14, column=1)
             self.xaxis_label.grid()
+            self.array_label.grid_remove()
             self.yaxis_label.grid()
             self.file_dropdown.grid()
             self.header_dropdown.grid()
@@ -638,15 +639,19 @@ class GUI:
         self.header_dropdown.set('')
         self.xaxis_dropdown.set('')
         self.yaxis_dropdown.set('')
+        self.array_dropdown.set('')
+
         self.header_dropdown['values'] = []
         self.xaxis_dropdown['values'] = []
         self.yaxis_dropdown['values'] = []
+        self.array_dropdown['values'] = []
         if self.ext == '.csv':
             self.data, self.text = open_csv(self.filenames[key])
 
             self.column_var.set("header selection")
             self.xaxis_var.set("x axis selection")
             self.yaxis_var.set("y axis selection")
+            self.array_var.set("array selection")
             # self.binout = Binout
             if self.text.ndim > 1:
                 self.text_rows = {' '.join([str(i) for i in row]):
@@ -665,7 +670,7 @@ class GUI:
             self.xaxis_var.set("y axis selection")
             self.yaxis_var.set("id selection")
         # Update array dropdown menu
-        self.array_dropdown['values'] = list(self.data.columns)
+       # self.array_dropdown['values'] = list(self.data.columns)
 
     # def
     @catch
@@ -956,6 +961,7 @@ class GUI:
             self.data.columns = self.headers
             self.xaxis_dropdown['values'] = self.headers
             self.yaxis_dropdown['values'] = self.headers
+            self.array_dropdown['values'] = self.headers
             print(self.data)
         elif type(self.data) is Binout:
             xdrop = list(self.data.read(self.header_dropdown.get()))
