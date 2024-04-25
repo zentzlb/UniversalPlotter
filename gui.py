@@ -739,7 +739,7 @@ class GUI:
         wz = self.data['Head Angular Velocity Z'].to_numpy() * dtr
 
         t, wx, wy, wz = trim_arrays(wx, wy, wz, xdata=t, lim=self.trim)
-        wx, wy, wz = filter_arrays(wx, wy, wz, cfc=1000)
+        wx, wy, wz = filter_arrays(wx, wy, wz, cfc=60)
 
         bric_score = bric(wx, wy, wz)
 
@@ -773,7 +773,7 @@ class GUI:
         wz = self.data['Head Angular Velocity Z'].to_numpy() * dtr
 
         t, wx, wy, wz = trim_arrays(wx, wy, wz, xdata=t, lim=self.trim)
-        wx, wy, wz = filter_arrays(wx, wy, wz, cfc=1000)
+        wx, wy, wz = filter_arrays(wx, wy, wz, cfc=60)
 
         ax = dy_dt(wx, t)
         ay = dy_dt(wy, t)
