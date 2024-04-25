@@ -39,6 +39,17 @@ def dy_dt(y: np.ndarray, t: np.ndarray) -> np.ndarray:
     return np.array([(y2 - y1) / (t2 - t1) for y1, y2, t1, t2 in zip(y[:-1], y[1:], t[:-1], t[1:])])
 
 
+def dy_dt2(y: np.ndarray, t: np.ndarray) -> np.ndarray:
+    """
+    calculate derivative of data
+    :param y: data array
+    :param t: time array
+    :return: derivative
+    """
+    h = t[1] - t[0]
+    return np.array([(y2 - y1) / (12 * h) for y1, y2, t1, t2 in zip(y[:-4], y[1:-3], y[3:-1], y[4:])])
+
+
 def mass_matrix(mx: float, my: float, mz: float) -> np.ndarray:
     """
     calculates mass matrix
@@ -197,7 +208,7 @@ if __name__ == '__main__':
     #                   float64[::1], float64[::1], float64[::1], float64[::1]))(equation_of_motion).inspect_types()
 
     def main():
-        n = 4000
+        n = 100000
         T = np.linspace(0, 1, n)
         Wx = np.array([50 * math.sin(i / 100) for i in range(n)])
         Wy = np.array([50 * math.sin(i / 70) for i in range(n)])

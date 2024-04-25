@@ -1,5 +1,6 @@
 import os
 import time
+import typing
 from tkinter import (filedialog, simpledialog, commondialog, dialog, messagebox, colorchooser, Tk, Button,
                      Toplevel, Label, BooleanVar, StringVar, Scale, Event, mainloop)
 from tkinter import ttk as TTK
@@ -292,6 +293,36 @@ class GUI:
                                        height=1)
         self.resultant_button.grid(row=6, column=2)
 
+    def switch(self,
+               func1: typing.Callable,
+               func2: typing.Callable,
+               args1: tuple = tuple(),
+               args2: tuple = tuple(),
+               kwargs1: dict = {},
+               kwargs2: dict = {}):
+        """
+        switches behavior based on data type
+        :param func1:
+        :param func2:
+        :param args1:
+        :param args2:
+        :param kwargs1:
+        :param kwargs2:
+        :return:
+        """
+        if type(self.data) is pd.DataFrame:
+            return func1(*args1, **kwargs1)
+        elif type(self.data) is Binout:
+            return func2(*args2, **kwargs2)
+        return
+
+    def get_binout_ydata(self, key: str):
+        if id_ := self.yaxis_dropdown.get():
+            index = list(self.data.read(self.header_dropdown.get(), 'ids')).index(int(id_))  # NOQA
+            return self.data.read(self.header_dropdown.get(), key)[:, index]
+        else:
+            return self.data.read(self.header_dropdown.get(), key)
+
     @catch
     def resultant_popup(self):
         if self.xaxis_dropdown.get():
@@ -304,24 +335,32 @@ class GUI:
             def select_all():
                 keys = [k for k in checkboxes if checkboxes[k]['bool'].get()]
                 xkey = self.xaxis_dropdown.get()
-                array = np.zeros_like(self.data[xkey])
+                xdata: pd.Series = self.switch(lambda: self.data[xkey],
+                                               lambda: pd.Series(self.data.read(self.header_dropdown.get(), 'time')))
+                ydata = np.zeros_like(xdata)
                 for key in keys:
-                    array += self.data[key].to_numpy() ** 2
-                if cfc != 0:
-                    ydata = CFC_filter(1 / 10000, np.sqrt(array), cfc)
-                else:
-                    ydata = np.sqrt(array)
-                ser = pd.Series(ydata)
-
-                self.series['resultant'] = {'xdata': self.data[xkey],
+                    array = self.switch(lambda k: self.data[k].to_numpy(),
+                                        lambda k: self.get_binout_ydata(k),
+                                        args1=(key,),
+                                        args2=(key,))
+                    if cfc != 0:
+                        array = CFC_filter(1 / 10000, array, cfc)
+                    ydata += array ** 2
+                    # array += self.data[key].to_numpy() ** 2
+                # if cfc != 0:
+                #     ydata = CFC_filter(1 / 10000, np.sqrt(array), cfc)
+                # else:
+                #     ydata = np.sqrt(array)
+                ser = pd.Series(np.sqrt(ydata))
+                self.series['resultant'] = {'xdata': xdata,
                                             'ydata': ser,
                                             'cfc': str(cfc),
                                             'xscale': 1,
                                             'yscale': 1,
                                             'xoffset': 0,
                                             'yoffset': 0,
-                                            'trim': (max(self.data[xkey].min(), self.trim[0]),
-                                                     min(self.data[xkey].max(), self.trim[1])),
+                                            'trim': (max(xdata.min(), self.trim[0]),
+                                                     min(xdata.max(), self.trim[1])),
                                             'color': '#000000',
                                             'style': '-',
                                             'marker': 'None',
@@ -340,7 +379,10 @@ class GUI:
             l.grid(row=0, column=0)
             checkboxes = {}
 
-            for i, value in enumerate(self.yaxis_dropdown['values']):
+            value_set = self.switch(lambda: self.yaxis_dropdown['values'],
+                                    lambda: self.xaxis_dropdown['values'])
+
+            for i, value in enumerate(value_set):
                 x = (i + 3) % 10
                 y = (i + 3) // 10
                 checkboxes[value] = {'bool': BooleanVar()}
@@ -381,7 +423,7 @@ class GUI:
         b.grid(row=1, column=0)
         # print('plot called now')
 
-    @catch
+    # @catch
     def trim_popup(self):
 
         def set_lower():
@@ -405,13 +447,13 @@ class GUI:
 
         def set_trim():
             self.trim = (slider_min.get(), slider_max.get())
-            min_var.set(f"default min: {self.trim[0]:0.4}")
-            max_var.set(f"default max: {self.trim[1]:0.4}")
+            min_var.set(f"default min: {self.trim[0]}")
+            max_var.set(f"default max: {self.trim[1]}")
 
         def reset_trim():
             self.trim = (-inf, inf)
-            min_var.set(f"default min: {self.trim[0]:0.4}")
-            max_var.set(f"default max: {self.trim[1]:0.4}")
+            min_var.set(f"default min: {self.trim[0]}")
+            max_var.set(f"default max: {self.trim[1]}")
 
         def set_lims():
             self.series[skey]['trim'] = (slider_min.get(), slider_max.get())
@@ -452,11 +494,11 @@ class GUI:
         slider_max.grid(row=1, column=1)
         slider_max.set(self.series[skey]['trim'][1])
 
-        min_var = StringVar(value=f"default min: {self.trim[0]:0.4}")
+        min_var = StringVar(value=f"default min: {self.trim[0]}")
         min_default = Label(win, textvariable=min_var)
         min_default.grid(row=2, column=0)
 
-        max_var = StringVar(value=f"default max: {self.trim[1]:0.4}")
+        max_var = StringVar(value=f"default max: {self.trim[1]}")
         max_default = Label(win, textvariable=max_var)
         max_default.grid(row=2, column=1)
 
@@ -576,23 +618,12 @@ class GUI:
                              'width': 2
                              }
 
+    @catch
     def addbinout_fn(self):
         """
         add binout to data series
         :return:
         """
-        # key1 = self.header_dropdown.get()
-        # key2 = self.xaxis_dropdown.get()
-        # key3 = self.yaxis_dropdown.get()
-        #
-        # if key3:
-        #     index = list(self.data.read(key1, 'ids')).index(int(key3))
-        # else:
-        #     index = 0
-        #
-        # if key1 and key2:
-        #     options1 = [key1, 'time']
-        #     options2 = [key1, key2]
 
         datax, datay = read_binout(self.data, (key1 := self.header_dropdown.get(),
                                                key2 := self.xaxis_dropdown.get(),
@@ -751,7 +782,24 @@ class GUI:
         dmg_score = calc_damage(ax, ay, az, t[1:])
         ais1, ais2, ais4 = dmg_ais(dmg_score)
 
-        messagebox.showinfo('Damage', f'BrIC: {dmg_score: 0.3f}'
+        plt.figure(1)
+
+        plt.plot(t[1:],
+                 ax,
+                 color='#ffab0f')  # (255, 171, 15)
+        plt.plot(t[1:],
+                 ay,
+                 color='#cd0532')
+        plt.plot(t[1:],
+                 az,
+                 color='#0080ff')
+        plt.xlabel('Time (s)')
+        plt.ylabel('Angular Acceleration (rads/s/s)')
+        plt.legend(['Ax', 'Ay', 'Az'])
+        plt.title('Damage Components')
+        plt.show()
+
+        messagebox.showinfo('DAMAGE', f'Damage: {dmg_score: 0.3f}'
                                       f'\n'
                                       f'\n AIS 1+ Risk: {100 * ais1:0.2f}%'
                                       f'\n AIS 2+ Risk: {100 * ais2:0.2f}%'
