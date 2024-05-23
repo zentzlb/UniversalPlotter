@@ -10,8 +10,9 @@ from HIC15 import hic15, hic_ais
 from Cmax import chest_AIS3
 from Nij import neck_AIS
 from lasso.dyna import Binout
-from femur import femur_ais2
-from math import cos, sin, tan, acos, asin, atan, atan2, pi, e, inf, log
+from femur import femur_ais
+from tibia import rti, tibia_ais2, ankle_ais2
+from math import cos, sin, tan, acos, asin, atan, atan2, exp, pi, e, inf, log, nan
 from BrIC import bric, bric_mps_ais, bric_csdm_ais
 from damage3 import calc_damage, dmg_ais, dy_dt
 
@@ -21,9 +22,6 @@ from filters import CFC_filter
 
 import pandas as pd
 import numpy as np
-import dask
-import dask.dataframe as dd
-import dask.array as da
 
 from csv_tools import open_csv
 from binout_tools import get_binout, read_binout
@@ -287,11 +285,17 @@ class GUI:
                                   height=1)
         self.cmax_button.grid(row=5, column=2)
 
+        self.cmax_button = Button(text="Tibia",
+                                  command=lambda: self.tibia_fn(),
+                                  width=25,
+                                  height=1)
+        self.cmax_button.grid(row=6, column=2)
+
         self.resultant_button = Button(text="Calculate Resultant",
                                        command=lambda: self.resultant_popup(),
                                        width=25,
                                        height=1)
-        self.resultant_button.grid(row=6, column=2)
+        self.resultant_button.grid(row=7, column=2)
 
     def switch(self,
                func1: typing.Callable,
@@ -794,9 +798,10 @@ class GUI:
                  az,
                  color='#0080ff')
         plt.xlabel('Time (s)')
-        plt.ylabel('Angular Acceleration (rads/s/s)')
+        plt.ylabel('Angular Acceleration (rads/s$^2$)')
         plt.legend(['Ax', 'Ay', 'Az'])
         plt.title('Damage Components')
+        plt.subplots_adjust(left=0.15)
         plt.show()
 
         messagebox.showinfo('DAMAGE', f'Damage: {dmg_score: 0.3f}'
@@ -841,8 +846,8 @@ class GUI:
         my_norm = np.array([my_fn(m) for m in my])
         # fz_norm = abs(self.data['Neck Upper Force Z'].to_numpy() / 4500)
         # my_norm = np.array([my_fn(my) for my in self.data['Neck Upper Moment Y'].to_numpy()])
-        nij = fz_norm + my_norm
-        nij_max = max(nij)
+        nij_history = fz_norm + my_norm
+        nij_max = max(nij_history)
 
         plt.figure(1)
 
@@ -853,7 +858,7 @@ class GUI:
                  my_norm,
                  color='#cd0532')
         plt.plot(t,
-                 nij,
+                 nij_history,
                  color='#0080ff')
 
         plt.xlabel('Time (s)')
@@ -874,27 +879,73 @@ class GUI:
         calculate femur injury risk
         :return:
         """
-        # risk_r, force_r = femur_ais2(self.data['Femur Right Force X'],
-        #                              self.data['Femur Right Force Y'],
-        #                              self.data['Femur Right Force Z'])
 
-        t = self.data['Display Name'].to_numpy()
-        # fx = self.data['Femur Left Force X'].to_numpy()
-        # fy = self.data['Femur Left Force Y'].to_numpy()
-        fz = self.data['Femur Left Force Z'].to_numpy()
+        try:
+            t = self.data['Display Name'].to_numpy()
+            fz = self.data['Femur Right Force Z'].to_numpy()
 
-        t, fz = trim_arrays(fz, xdata=t, lim=self.trim)
-        fz = CFC_filter(1 / 10000, fz, cfc=600)
+            t, fz = trim_arrays(fz, xdata=t, lim=self.trim)
+            fz = CFC_filter(1 / 10000, fz, cfc=600)
 
-        risk_l, force_l = femur_ais2(fz)
-        # risk_l, force_l = femur_ais2(self.data['Femur Left Force X'],
-        #                              self.data['Femur Left Force Y'],
-        #                              self.data['Femur Left Force Z'])
+            ais2_r, ais3_r, force_r = femur_ais(fz)
+        except KeyError:
+            ais2_r, ais3_r, force_r = nan, nan, nan
+
+        try:
+            t = self.data['Display Name'].to_numpy()
+            fz = self.data['Femur Left Force Z'].to_numpy()
+
+            t, fz = trim_arrays(fz, xdata=t, lim=self.trim)
+            fz = CFC_filter(1 / 10000, fz, cfc=600)
+
+            ais2_l, ais3_l, force_l = femur_ais(fz)
+        except KeyError:
+            ais2_l, ais3_l, force_l = nan, nan, nan
 
         messagebox.showinfo('Femur Injury Risk',
+                            f'Right Femur\n'
+                            f'Force: {force_r:0.3f} kN\n'
+                            f'AIS2+ Risk: {100 * ais2_r:0.2f}%\n'
+                            f'AIS3+ Risk: {100 * ais3_r:0.2f}%\n'
+                            f'_____________________\n'
                             f'Left Femur\n'
                             f'Force: {force_l:0.3f} kN\n'
-                            f'AIS2+ Risk: {100 * risk_l:0.2f}%\n')
+                            f'AIS2+ Risk: {100 * ais2_l:0.2f}%\n'
+                            f'AIS3+ Risk: {100 * ais3_l:0.2f}%\n')
+
+
+    def tibia_fn(self):
+        """
+        calculate tibia injury risk
+        """
+
+        for side in ['Right', 'Left']:
+            try:
+                t = self.data['Display Name'].to_numpy()
+                fz = self.data[f'Tibia {side} Upper Force Z'].to_numpy()
+                mx = self.data[f'Tibia {side} Upper Moment X'].to_numpy()
+                my = self.data[f'Tibia {side} Upper Moment Y'].to_numpy()
+
+                axial = self.data[f'Tibia {side} Lower Force Z'].to_numpy()
+
+                t, mx, my, fz, axial = trim_arrays(mx, my, fz, axial, xdata=t, lim=self.trim)
+                mx, my, fz, axial = filter_arrays(mx, my, fz, axial, cfc=600)
+
+                ti = rti(mx, my, fz)
+                ais2_tibia = tibia_ais2(ti)
+                ais2_ankle, f_max = ankle_ais2(axial)
+
+            except KeyError:
+                ti, ais2_tibia, ais2_ankle, f_max = nan, nan, nan, nan
+
+            messagebox.showinfo('Tibia Injury Risk',
+                                f'{side} Tibia\n'
+                                f'________________________\n'
+                                f'Tibia Index: {ti:0.3f}\n'
+                                f'Tibia AIS2+ Risk: {100 * ais2_tibia:0.2f}%\n'
+                                f'________________________\n'
+                                f'Lower Tibia Axial Load: {f_max:0.3f}\n'
+                                f'Ankle AIS2+ Risk: {100 * ais2_ankle:0.2f}%')
 
     def clear_fn(self):
         """

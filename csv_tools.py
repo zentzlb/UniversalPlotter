@@ -1,13 +1,7 @@
-import dask as d
-import dask.dataframe as dd
-import dask.array as da
 import pandas as pd
 import numpy as np
 
 from functools import lru_cache
-
-
-# import pyarrow
 
 
 def open_csv(path: str, dtype=np.float64) -> tuple[pd.DataFrame, np.ndarray]:

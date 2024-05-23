@@ -37,5 +37,24 @@ def chest_AIS3(cmax: float) -> float:
     return 1 / (1 + math.exp(-q))
 
 
+def chest_AIS3_old(cmax: float) -> tuple[float, float, float, float]:
+    """
+    calculates chest injury from old risk curves \n
+    source: Development of Improved
+    Injury Criteria for the
+    Assessment of Advanced
+    Automotive Restraint Systems - II
+    :param cmax: chest deflection (mm)
+    :return: AIS 2+, AIS 3+, AIS 4+, AIS 5+, injury risk
+    """
+    ais2 = 1 / (1 + math.exp(1.8706 - 0.04439 * cmax))
+    ais3 = 1 / (1 + math.exp(3.7124 - 0.0475 * cmax))
+    ais4 = 1 / (1 + math.exp(5.0952 - 0.0475 * cmax))
+    ais5 = 1 / (1 + math.exp(8.8274 - 0.0459 * cmax))
+    return ais2, ais3, ais4, ais5
+
+
 if __name__ == '__main__':
     print(chest_AIS3(24.1))
+    print()
+    print(chest_AIS3_old(24.1))

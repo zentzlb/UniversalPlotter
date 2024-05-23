@@ -8,9 +8,9 @@ def bric(wx: np.ndarray, wy: np.ndarray, wz: np.ndarray) -> float:
     """
     Function calculates the Maximum BrIC score \n
     source: Injury Criteria for the THOR 50th Male ATD
-    :param wx: x angular velocity
-    :param wy: y angular velocity
-    :param wz: z angular velocity
+    :param wx: x angular velocity in rads/s
+    :param wy: y angular velocity in rads/s
+    :param wz: z angular velocity in rads/s
     :return: Maximum BrIC score
     """
     maxwx = np.abs(wx).max()
@@ -63,15 +63,20 @@ def bric_mps_ais(bric_score: float) -> tuple[float, float, float, float, float]:
 
 
 if __name__ == '__main__':
-    import random as rnd
+    # import random as rnd
+    #
+    # n = 100_000
+    # Wx = np.array([20 * rnd.random() for i in range(n)])
+    # Wy = np.array([20 * rnd.random() for i in range(n)])
+    # Wz = np.array([20 * rnd.random() for i in range(n)])
+    #
 
-    n = 100_000
-    Wx = np.array([20 * rnd.random() for i in range(n)])
-    Wy = np.array([20 * rnd.random() for i in range(n)])
-    Wz = np.array([20 * rnd.random() for i in range(n)])
-
+    Wx = np.array([0])
+    Wy = np.array([0])
+    Wz = np.array([25])
     print(BrIC := bric(Wx, Wy, Wz))
-    print(bric_csdm_ais(BrIC))
+    # print(bric_csdm_ais(BrIC))
     print(bric_mps_ais(BrIC))
+    print(bric_mps_ais(0.8793821283666321))
     # ais_mps.__annotations__
 

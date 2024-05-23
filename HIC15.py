@@ -27,7 +27,7 @@ def timed(fn: Callable) -> Callable:
 
 
 @timed
-@njit(UniTuple(float64, 2)(float64[::1], float64[::1], float64[::1], float64[::1]))
+@njit(UniTuple(float64, 2)(float64[:], float64[:], float64[:], float64[:]))
 def hic15(my_time: np.ndarray,
           ax: np.ndarray,
           ay: np.ndarray,
