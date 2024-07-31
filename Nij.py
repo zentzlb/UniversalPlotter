@@ -50,5 +50,5 @@ def neck_AIS(nij: float, age: int = 45) -> tuple[float, float, float]:
 
 
 if __name__ == '__main__':
-    print(neck_AIS(0.3, 45))
+    print(neck_AIS(2.66, 45))
 

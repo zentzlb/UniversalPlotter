@@ -306,13 +306,13 @@ class GUI:
                kwargs2: dict = {}):
         """
         switches behavior based on data type
-        :param func1:
-        :param func2:
-        :param args1:
-        :param args2:
-        :param kwargs1:
-        :param kwargs2:
-        :return:
+        :param func1: function to use if data type is dataframe
+        :param func2: function to use if data type is binout
+        :param args1: arguments to use if data type is dataframe
+        :param args2: arguments to use if data type is binout
+        :param kwargs1: keyword arguments to use if data type is dataframe
+        :param kwargs2: keyword arguments to use if data type is binout
+        :return: selected function output
         """
         if type(self.data) is pd.DataFrame:
             return func1(*args1, **kwargs1)
@@ -320,7 +320,12 @@ class GUI:
             return func2(*args2, **kwargs2)
         return
 
-    def get_binout_ydata(self, key: str):
+    def get_binout_ydata(self, key: str) -> np.ndarray:
+        """
+        retrieve data from binout object
+        :param key: key for data selection
+        :return: data in numpy ndarray format
+        """
         if id_ := self.yaxis_dropdown.get():
             index = list(self.data.read(self.header_dropdown.get(), 'ids')).index(int(id_))  # NOQA
             return self.data.read(self.header_dropdown.get(), key)[:, index]
@@ -329,6 +334,9 @@ class GUI:
 
     @catch
     def resultant_popup(self):
+        """
+        launches popup to select data for calculating resultant
+        """
         if self.xaxis_dropdown.get():
             cfc = simpledialog.askinteger('set CFC filter',
                                           f'enter CFC filter type (0 is unfiltered)\n',
@@ -403,6 +411,9 @@ class GUI:
 
     @catch
     def plot_popup(self):
+        """
+        launches popup window to select plots
+        """
         def select_all():
             keys = [k for k in checkboxes if checkboxes[k]['bool'].get()]
             win.destroy()
@@ -429,6 +440,9 @@ class GUI:
 
     # @catch
     def trim_popup(self):
+        """
+        launches popup window to trim data series
+        """
 
         def set_lower():
             value = simpledialog.askfloat('Set Lower Limit',
@@ -524,7 +538,6 @@ class GUI:
     def browse_fn(self):
         """
         browse and select files
-        :return:
         """
         self.files = [*self.files,
                       *[file for file in filedialog.askopenfilenames(filetypes=[('CSV', '.csv'), ('binout', '*')])
@@ -535,7 +548,6 @@ class GUI:
     def color_fn(self):
         """
         pick plot color for selected series
-        :return:
         """
         skey = self.series_dropdown.get()
         color = colorchooser.askcolor(initialcolor=self.series[skey]['color'])
@@ -548,7 +560,6 @@ class GUI:
     def open_fn(self):
         """
         open selected file
-        :return:
         """
         key = self.file_dropdown.get()
         self.ext = check_ext(self.filenames[key])
@@ -587,7 +598,6 @@ class GUI:
     def addseries_fn(self):
         """
         add data to saved series
-        :return:
         """
         if self.ext == '.csv':
             self.addcsv_fn()
@@ -602,7 +612,6 @@ class GUI:
     def addcsv_fn(self):
         """
         add csv to data series
-        :return:
         """
         xkey = self.xaxis_dropdown.get()
         ykey = self.yaxis_dropdown.get()
@@ -626,7 +635,6 @@ class GUI:
     def addbinout_fn(self):
         """
         add binout to data series
-        :return:
         """
 
         datax, datay = read_binout(self.data, (key1 := self.header_dropdown.get(),
@@ -653,7 +661,6 @@ class GUI:
     def trim_fn(self):
         """
         trim selected series
-        :return:
         """
         skey = self.series_dropdown.get()
         lower_lim = simpledialog.askfloat('Set Data Limits',
@@ -661,7 +668,7 @@ class GUI:
                                           minvalue=self.series[skey]['xdata'].min(),
                                           maxvalue=self.series[skey]['xdata'].max(),
                                           initialvalue=self.series[skey]['trim'][0])
-        # time.sleep(0.1)
+
         upper_lim = simpledialog.askfloat('Set Data Limits',
                                           'enter data upper limit',
                                           minvalue=self.series[skey]['xdata'].min(),
@@ -675,7 +682,6 @@ class GUI:
     def plot(self, selected_series):
         """
         plot all current data series
-        :return:
         """
 
         if not plt.fignum_exists(1):
@@ -702,7 +708,6 @@ class GUI:
     def hic15_fn(self):
         """
         calculate HIC15 AIS2+ injury risk
-        :return:
         """
 
         t = self.data['Display Name'].to_numpy()
@@ -715,26 +720,16 @@ class GUI:
 
         hic, hic_t = hic15(t, x_acc, y_acc, z_acc)
 
-        # print(f"filtered: {hic}")
-
-        # hic, hic_t = hic15(self.data['Display Name'].to_numpy(),
-        #                    self.data['Head Acceleration X'].to_numpy(),
-        #                    self.data['Head Acceleration Y'].to_numpy(),
-        #                    self.data['Head Acceleration Z'].to_numpy())
-        #
-        # print(f"unfiltered: {hic}")
-
         ais2, ais3 = hic_ais(hic)
         messagebox.showinfo('HIC15', f'HIC15: {hic:0.1f}'
                                      f'\nHIC Time: {hic_t:0.3f}'
-                                     f'\nAIS 2 Risk: {100 * ais2:0.2f}%'
+                                     f'\nAIS 2+ Risk: {100 * ais2:0.2f}%'
                                      f'\nAIS 3+ Risk: {100 * ais3:0.2f}%')
 
     @catch
     def bric_fn(self):
         """
         calculate HIC15 AIS2+ injury risk
-        :return:
         """
         dtr = pi / 180
         t = self.data['Display Name'].to_numpy()
@@ -768,7 +763,6 @@ class GUI:
     def damage_fn(self):
         """
         calculate HIC15 AIS2+ injury risk
-        :return:
         """
         dtr = pi / 180
         t = self.data['Display Name'].to_numpy()
@@ -815,14 +809,13 @@ class GUI:
     def cmax_fn(self):
         """
         calculate chest AIS3+ injury risk based on Cmax
-        :return:
         """
         t = self.data['Display Name'].to_numpy()
         c = self.data['DS_78051-317_EY5223'].to_numpy()
         t, c = trim_arrays(c, xdata=t, lim=self.trim)
         c: np.ndarray = CFC_filter(1 / 10000, c, cfc=180)
         # cmax = self.data['DS_78051-317_EY5223'].to_numpy().__abs__().max()
-        cmax = c.__abs__().max()
+        cmax = max((-c.min(), 0))
         ais3 = chest_AIS3(cmax)
         messagebox.showinfo('Cmax', f'Cmax: {cmax:0.1f}'
                                     f'\nAIS3+ Risk: {100 * ais3:0.2f}%')
@@ -831,7 +824,6 @@ class GUI:
     def nij_fn(self):
         """
         calculate neck injury risk based on Nij
-        :return:
         """
         t = self.data['Display Name'].to_numpy()
         fz = self.data['Neck Upper Force Z'].to_numpy()

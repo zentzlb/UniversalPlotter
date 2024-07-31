@@ -77,17 +77,30 @@ def hic_ais(hic: float) -> tuple[float, float]:
     p3 = (math.log(hic) - 7.45231) / 0.73998
     ais2 = norm.cdf(p2)
     ais3 = norm.cdf(p3)
-    return min(ais2 - ais3, 0), ais3
+    return ais2, ais3
 
 
 if __name__ == '__main__':
-    t = np.linspace(0, 10, 100001)
-    Ax = np.array([100 * rnd.random() for i in range(len(t))])
-    Ay = np.array([100 * rnd.random() for i in range(len(t))])
-    Az = np.array([100 * rnd.random() for i in range(len(t))])
-
-    hic15(t, Ax, Ay, Az)
-    Hic, Hic_t = hic15(t, Ax, Ay, Az)
-    print(Hic, Hic_t)
+    from matplotlib import pyplot as plt
+    hic = [h for h in range(1, 9000)]
+    ais2a3 = [hic_ais(h) for h in hic]
+    AIS2 = [a[0] for a in ais2a3]
+    AIS3 = [a[1] for a in ais2a3]
+    ais2m3 = [a2 - a3 for a2, a3 in ais2a3]
+    plt.figure(0)
+    plt.plot(hic, ais2a3)
+    plt.plot(hic, ais2m3)
+    plt.xlabel('HIC15')
+    plt.ylabel('AIS2 risk')
+    plt.legend(['AIS2+', 'AIS3+', 'AIS2'])
+    plt.show()
+    # t = np.linspace(0, 10, 100001)
+    # Ax = np.array([100 * rnd.random() for i in range(len(t))])
+    # Ay = np.array([100 * rnd.random() for i in range(len(t))])
+    # Az = np.array([100 * rnd.random() for i in range(len(t))])
+    #
+    # hic15(t, Ax, Ay, Az)
+    # Hic, Hic_t = hic15(t, Ax, Ay, Az)
+    # print(Hic, Hic_t)
 
 

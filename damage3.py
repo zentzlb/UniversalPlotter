@@ -193,7 +193,7 @@ def calc_damage(aax: np.ndarray, aay: np.ndarray, aaz: np.ndarray, time_: np.nda
 
 def dmg_ais(damage: float) -> tuple[float, float, float]:
     """
-    This function calculates the risk  for damage injury criteria
+    This function calculates the risk for damage injury criteria
     :param damage: damage value
     :return: [P(AIS1+), P(AIS2+), P(AIS4+)]
     """
@@ -219,6 +219,7 @@ if __name__ == '__main__':
         print(dmg := calc_damage(Ax, Ay, Az, T[1:]))
         print(dmg := calc_damage(Ax, Ay, Az, T[1:]))
         print(dmg_ais(dmg))
+        print(dmg_ais(0.57))
         # print(Damg_to_AIS(dmg)) 0.28514911121460335
 
 
