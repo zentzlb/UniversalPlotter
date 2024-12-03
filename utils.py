@@ -28,7 +28,7 @@ class SimpleChoiceBox:
         self.t.destroy()
 
 
-def catch(fn: Callable):
+def catch(fn: Callable) -> Callable:
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
         try:
@@ -118,8 +118,7 @@ def process_series(dic: dict) -> tuple[np.ndarray, np.ndarray]:
     return xdata, ydata
 
 
-def trim_arrays(*args: np.ndarray, xdata: np.ndarray = np.array([]), lim: tuple[float, float] = (-inf, inf)) \
-        -> tuple:
+def trim_arrays(*args: np.ndarray, xdata: np.ndarray = np.array([]), lim: tuple[float, float] = (-inf, inf)) -> tuple:
     """
     trims x and y data to specified x values
     :param xdata: x data
@@ -133,8 +132,7 @@ def trim_arrays(*args: np.ndarray, xdata: np.ndarray = np.array([]), lim: tuple[
     return xdata[index[0]:index[-1] + 1], *trimmed
 
 
-def filter_arrays(*args: np.ndarray, T: float = 1 / 10000, cfc: int = 1000) \
-        -> list[ndarray]:
+def filter_arrays(*args: np.ndarray, T: float = 1 / 10000, cfc: int = 1000) -> list[ndarray]:
     """
 
     :param args: arrays to filter

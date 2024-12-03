@@ -1,6 +1,7 @@
 import os
 import time
 import typing
+from functools import partial
 from tkinter import (filedialog, simpledialog, commondialog, dialog, messagebox, colorchooser, Tk, Button,
                      Toplevel, Label, BooleanVar, StringVar, Scale, Event, mainloop)
 from tkinter import ttk as TTK
@@ -8,7 +9,7 @@ from utils import (catch, check_file, check_ext, trim_series, process_series, en
                    trim_arrays, filter_arrays)
 from HIC15 import hic15, hic_ais
 from Cmax import chest_AIS3
-from Nij import neck_AIS
+from Nij import neck_ais, nij
 from lasso.dyna import Binout
 from femur import femur_ais
 from tibia import rti, tibia_ais2, ankle_ais2
@@ -302,8 +303,8 @@ class GUI:
                func2: typing.Callable,
                args1: tuple = tuple(),
                args2: tuple = tuple(),
-               kwargs1: dict = {},
-               kwargs2: dict = {}):
+               kwargs1: dict = None,
+               kwargs2: dict = None):
         """
         switches behavior based on data type
         :param func1: function to use if data type is dataframe
@@ -314,6 +315,10 @@ class GUI:
         :param kwargs2: keyword arguments to use if data type is binout
         :return: selected function output
         """
+        if kwargs2 is None:
+            kwargs2 = {}
+        if kwargs1 is None:
+            kwargs1 = {}
         if type(self.data) is pd.DataFrame:
             return func1(*args1, **kwargs1)
         elif type(self.data) is Binout:
@@ -354,7 +359,8 @@ class GUI:
                     array = self.switch(lambda k: self.data[k].to_numpy(),
                                         lambda k: self.get_binout_ydata(k),
                                         args1=(key,),
-                                        args2=(key,))
+                                        args2=(key,)
+                                        )
                     if cfc != 0:
                         array = CFC_filter(1 / 10000, array, cfc)
                     ydata += array ** 2
@@ -414,24 +420,41 @@ class GUI:
         """
         launches popup window to select plots
         """
+        order = []
+
         def select_all():
-            keys = [k for k in checkboxes if checkboxes[k]['bool'].get()]
+            nonlocal order
+
+            # keys = [k for k in checkboxes if checkboxes[k]['bool'].get()]
             win.destroy()
-            self.plot(keys)
+            print(legend.get())
+            self.plot(order, legend.get())
+
+        def add_rmv(val: str):
+            nonlocal order
+            if val in order:
+                order = [z for z in order if z != val]
+            else:
+                order.append(val)
+            print(order)
 
         win = Toplevel()
         win.wm_title("SELECT SERIES")
         # win.geometry('200x300')
 
-        l = Label(win, text="select all data series to plot")
+        l = Label(win, text="select series to plot   ")
         l.grid(row=0, column=0)
         checkboxes = {}
+        legend_box = TTK.Checkbutton(win, text='Display Legend',
+                                     variable=(legend := BooleanVar(value=len(self.series_dropdown['values']) > 1)))
+        legend_box.grid(row=0, column=1)
 
         for i, value in enumerate(self.series_dropdown['values']):
             x = (i + 2) % 10
             y = (i + 2) // 10
-            checkboxes[value] = {'bool': BooleanVar()}
-            checkboxes[value]['checkbox'] = TTK.Checkbutton(win, text=value, variable=checkboxes[value]['bool'])
+            checkboxes[value] = {'bool': BooleanVar(value=False)}
+            checkboxes[value]['checkbox'] = TTK.Checkbutton(win, text=value, variable=checkboxes[value]['bool'],
+                                                            command=partial(add_rmv, value))
             checkboxes[value]['checkbox'].grid(row=x, column=y)
 
         b = TTK.Button(win, text="Plot", command=select_all)
@@ -679,7 +702,7 @@ class GUI:
             print((lower_lim, upper_lim))
 
     @catch
-    def plot(self, selected_series):
+    def plot(self, selected_series: list, legend: bool):
         """
         plot all current data series
         """
@@ -700,7 +723,8 @@ class GUI:
 
         plt.xlabel(self.xlabel)
         plt.ylabel(self.ylabel)
-        plt.legend(self.legend)
+        if legend:
+            plt.legend(self.legend)
         plt.title(self.title)
         plt.show()
 
@@ -833,12 +857,13 @@ class GUI:
         fz = CFC_filter(1 / 10000, fz, 1000)
         my = CFC_filter(1 / 10000, my, 600)
 
-        my_fn = lambda x: x / 310 if x > 0 else -x / 125
-        fz_norm = (fz / 4500).__abs__()
-        my_norm = np.array([my_fn(m) for m in my])
+        # my_fn = lambda x: x / 310 if x > 0 else -x / 125
+        # fz_norm = (fz / 4500).__abs__()
+        # my_norm = np.array([my_fn(m) for m in my])
         # fz_norm = abs(self.data['Neck Upper Force Z'].to_numpy() / 4500)
         # my_norm = np.array([my_fn(my) for my in self.data['Neck Upper Moment Y'].to_numpy()])
-        nij_history = fz_norm + my_norm
+        # nij_history = fz_norm + my_norm
+        nij_history, fz_norm, my_norm = nij(fz, my)
         nij_max = max(nij_history)
 
         plt.figure(1)
@@ -859,7 +884,7 @@ class GUI:
         plt.title('Nij Components')
         plt.show()
 
-        ais2, ais3, ais3_old = neck_AIS(nij_max)
+        ais2, ais3, ais3_old = neck_ais(nij_max)
         messagebox.showinfo('Nij', f'Nij: {nij_max:0.2f}\n'
                                    f'AIS2 Risk: {100 * ais2:0.2f}%\n'
                                    f'AIS3+ Risk: {100 * ais3:0.2f}%\n'
@@ -904,7 +929,6 @@ class GUI:
                             f'Force: {force_l:0.3f} kN\n'
                             f'AIS2+ Risk: {100 * ais2_l:0.2f}%\n'
                             f'AIS3+ Risk: {100 * ais3_l:0.2f}%\n')
-
 
     def tibia_fn(self):
         """

@@ -15,4 +15,13 @@ def femur_ais(force_z: np.ndarray) -> tuple[float, float, float]:
 
 
 if __name__ == '__main__':
-    pass
+    from matplotlib import pyplot as plt
+    force = [i for i in range(12000)]
+    ais2 = [femur_ais(np.array([i]))[0] for i in range(12000)]
+    ais3 = [femur_ais(np.array([i]))[1] for i in range(12000)]
+
+    plt.figure(0)
+    plt.plot(force, ais2)
+    plt.plot(force, ais3)
+    plt.legend(['AIS 2+', 'AIS 3+'])
+    plt.show()

@@ -71,12 +71,12 @@ if __name__ == '__main__':
     # Wz = np.array([20 * rnd.random() for i in range(n)])
     #
 
-    Wx = np.array([0])
-    Wy = np.array([0])
-    Wz = np.array([25])
-    print(BrIC := bric(Wx, Wy, Wz))
-    # print(bric_csdm_ais(BrIC))
-    print(bric_mps_ais(BrIC))
-    print(bric_mps_ais(0.8793821283666321))
+    # Wx = np.array([0])
+    # Wy = np.array([0])
+    # Wz = np.array([25])
+    # print(BrIC := bric(Wx, Wy, Wz))
+    # # print(bric_csdm_ais(BrIC))
+    # print(bric_mps_ais(BrIC))
+    print(bric_mps_ais(0.4))
     # ais_mps.__annotations__
 

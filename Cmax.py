@@ -1,12 +1,26 @@
 import math
 
 
-def chest_AIS3(cmax: float) -> float:
+def chest_AIS3(cmax: float,
+               male: bool = True,
+               mass: float = 77.7,
+               age: float = 45.0,
+               sled_speed: float = 56.327,
+               driver: bool = False,
+               airbag: bool = True,
+               combined: bool = False) -> float:
     """
     calculates AIS3+ chest injury risk from chest deflection \n
     source: The Hybrid III Dummy as a Discriminator of Injurious
     and Non-Injurious Restraint Loading
     :param cmax: chest deflection (mm)
+    :param male:
+    :param mass:
+    :param age:
+    :param sled_speed:
+    :param driver:
+    :param airbag:
+    :param combined:
     :return: AIS3+ injury risk
     """
     a = -14.4135
@@ -22,17 +36,17 @@ def chest_AIS3(cmax: float) -> float:
     ]
 
     x = [
-        1,  # male
-        77.7,  # mass (kg)
-        45,  # age
-        56.327,  # sled speed (km/hr) 51.5
-        0,  # is driver
-        1,  # airbag loading
-        0,  # combined loading
+        male,  # male
+        mass,  # mass (kg)
+        age,  # age
+        sled_speed,  # sled speed (km/hr) 51.5
+        driver,  # is driver
+        airbag,  # airbag loading
+        combined,  # combined loading
         cmax
     ]
 
-    q = a + sum([x[0] * x[1] for x in zip(B, x)])
+    q = a + sum([x1 * x2 for (x1, x2) in zip(B, x)])
 
     return 1 / (1 + math.exp(-q))
 
@@ -55,6 +69,16 @@ def chest_AIS3_old(cmax: float) -> tuple[float, float, float, float]:
 
 
 if __name__ == '__main__':
-    print(chest_AIS3(24.1))
-    print()
-    print(chest_AIS3_old(24.1))
+    from matplotlib import pyplot as plt
+    CMAX = [i for i in range(100)]
+    AIS3 = [chest_AIS3(c) for c in CMAX]
+
+    plt.figure(0)
+    plt.title('AIS3 Chest Injury')
+    plt.xlabel('cmax (mm)')
+    plt.ylabel('AIS 3 injury risk')
+    plt.plot(CMAX, AIS3)
+
+    # print(chest_AIS3(24.1))
+    # print()
+    # print(chest_AIS3_old(24.1))

@@ -208,18 +208,18 @@ if __name__ == '__main__':
     #                   float64[::1], float64[::1], float64[::1], float64[::1]))(equation_of_motion).inspect_types()
 
     def main():
-        n = 100000
-        T = np.linspace(0, 1, n)
-        Wx = np.array([50 * math.sin(i / 100) for i in range(n)])
-        Wy = np.array([50 * math.sin(i / 70) for i in range(n)])
-        Wz = np.array([50 * math.sin(i / 120) for i in range(n)])
-        Ax = dy_dt(Wx, T)
-        Ay = dy_dt(Wy, T)
-        Az = dy_dt(Wz, T)
-        print(dmg := calc_damage(Ax, Ay, Az, T[1:]))
-        print(dmg := calc_damage(Ax, Ay, Az, T[1:]))
-        print(dmg_ais(dmg))
-        print(dmg_ais(0.57))
+        # n = 100000
+        # T = np.linspace(0, 1, n)
+        # Wx = np.array([50 * math.sin(i / 100) for i in range(n)])
+        # Wy = np.array([50 * math.sin(i / 70) for i in range(n)])
+        # Wz = np.array([50 * math.sin(i / 120) for i in range(n)])
+        # Ax = dy_dt(Wx, T)
+        # Ay = dy_dt(Wy, T)
+        # Az = dy_dt(Wz, T)
+        # print(dmg := calc_damage(Ax, Ay, Az, T[1:]))
+        # print(dmg := calc_damage(Ax, Ay, Az, T[1:]))
+        # print(dmg_ais(dmg))
+        print(dmg_ais(0.19))
         # print(Damg_to_AIS(dmg)) 0.28514911121460335
 
 
