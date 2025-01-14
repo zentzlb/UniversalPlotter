@@ -6,6 +6,7 @@ from tkinter import ttk as TTK
 
 import numpy as np
 import pandas as pd
+from scipy import integrate
 from numpy import ndarray
 
 from filters import CFC_filter
@@ -145,8 +146,13 @@ def filter_arrays(*args: np.ndarray, T: float = 1 / 10000, cfc: int = 1000) -> l
     return filtered
 
 
+def integrate_data(xdata: pd.Series, ydata: pd.Series) -> float:
+    return integrate.trapezoid(ydata, xdata)
+
+
 if __name__ == '__main__':
     import random as rnd
+
     n = 1001
     X = np.linspace(-10, 10, n)
     Y2 = np.array([rnd.random() for i in range(n)])
@@ -157,4 +163,3 @@ if __name__ == '__main__':
     print(Xt)
     print(Y1t)
     print(Y2t)
-

@@ -7,7 +7,7 @@ def CFC(T: float, cfc: int) -> tuple[list[float], list[float]]:
     """
     calculates CFC parameters \n
     credit to: KEVIN KOPP
-    :param T: frequency
+    :param T: time step between datapoints
     :param cfc: filter type
     :return: b and a constants
     """
@@ -32,7 +32,7 @@ def CFC(T: float, cfc: int) -> tuple[list[float], list[float]]:
 def CFC_filter(T: float, data: np.ndarray, cfc: int) -> np.ndarray:
     """
     applies CFC filter to data
-    :param T: frequency
+    :param T: time step between datapoints
     :param data: series to be filtered
     :param cfc: filter type
     :return: filtered data

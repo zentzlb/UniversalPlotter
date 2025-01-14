@@ -1,7 +1,7 @@
 import os
-import time
 import typing
 from functools import partial
+from scipy import integrate
 from tkinter import (filedialog, simpledialog, commondialog, dialog, messagebox, colorchooser, Tk, Button,
                      Toplevel, Label, BooleanVar, StringVar, Scale, Event, mainloop)
 from tkinter import ttk as TTK
@@ -298,6 +298,16 @@ class GUI:
                                        height=1)
         self.resultant_button.grid(row=7, column=2)
 
+        self.resultant_button = Button(text="Integrate",
+                                       command=lambda: self.integrate(),
+                                       width=25,
+                                       height=1)
+        self.resultant_button.grid(row=8, column=2)
+
+    @property
+    def selected_series(self) -> dict:
+        return self.series[self.series_dropdown.get()]
+
     def switch(self,
                func1: typing.Callable,
                func2: typing.Callable,
@@ -336,6 +346,12 @@ class GUI:
             return self.data.read(self.header_dropdown.get(), key)[:, index]
         else:
             return self.data.read(self.header_dropdown.get(), key)
+
+    @catch
+    def integrate(self):
+        xdata, ydata = process_series(self.selected_series)
+        messagebox.showinfo(f'{self.series_dropdown.get()} Integral',
+                            f"{integrate.trapezoid(ydata, xdata):0.3f}")
 
     @catch
     def resultant_popup(self):
